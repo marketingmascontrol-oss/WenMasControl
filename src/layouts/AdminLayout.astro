@@ -1,0 +1,125 @@
+---
+import "../styles/global.css";
+import { SITE } from "../lib/site";
+import { actions } from "astro:actions";
+import { supabaseAdmin } from "../lib/supabase-admin";
+import { STOCK_BAJO_UMBRAL } from "../lib/inventario";
+
+interface Props {
+  titulo: string;
+  mostrarNav?: boolean;
+  /** "ancho" para pantallas de trabajo con muchas columnas (la vitrina). */
+  ancho?: "normal" | "ancho";
+}
+
+const { titulo, mostrarNav = true, ancho = "normal" } = Astro.props;
+const anchoMax = ancho === "ancho" ? "max-w-7xl" : "max-w-5xl";
+const ruta = Astro.url.pathname;
+const claseNav = (activa: boolean) =>
+  `flex items-center gap-1.5 rounded-[6px] px-2.5 py-1.5 ${activa ? "bg-white/10 text-white" : "text-plata hover:text-white"}`;
+
+let productosAgotados = 0;
+let productosStockBajo = 0;
+let resenasPendientes = 0;
+let proveedoresPendientes = 0;
+if (mostrarNav) {
+  const [{ count: countAgotados }, { count: countBajo }, { count: countResenas }, { count: countProveedores }] =
+    await Promise.all([
+      supabaseAdmin.from("productos").select("id", { count: "exact", head: true }).eq("activo", true).eq("stock", 0),
+      supabaseAdmin
+        .from("productos")
+        .select("id", { count: "exact", head: true })
+        .eq("activo", true)
+        .gt("stock", 0)
+        .lte("stock", STOCK_BAJO_UMBRAL),
+      supabaseAdmin.from("resenas").select("id", { count: "exact", head: true }).eq("aprobada", false),
+      supabaseAdmin.from("solicitudes_proveedor").select("id", { count: "exact", head: true }).eq("contactado", false),
+    ]);
+  productosAgotados = countAgotados ?? 0;
+  productosStockBajo = countBajo ?? 0;
+  resenasPendientes = countResenas ?? 0;
+  proveedoresPendientes = countProveedores ?? 0;
+}
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <title>{titulo} · Panel {SITE.nombre}</title>
+  </head>
+  <body class="min-h-screen bg-tecnico">
+    {mostrarNav && (
+      <header class="bg-brand-500 text-white">
+        <div class={`mx-auto flex ${anchoMax} flex-wrap items-center justify-between gap-3 px-4 py-3`}>
+          <nav class="flex flex-wrap items-center gap-1 text-sm font-semibold">
+            <a href="/admin/vitrina" class="mr-3 flex items-center gap-2">
+              <img src="/simbolo-negativo.svg" alt="" class="h-7 w-7" />
+              <span class="font-black tracking-[-0.02em]">Panel {SITE.nombre}</span>
+            </a>
+            <a href="/admin/vitrina" class={claseNav(ruta.startsWith("/admin/vitrina"))}>Vitrina</a>
+            <a href="/admin" class={claseNav(ruta === "/admin" || ruta === "/admin/" || ruta.startsWith("/admin/productos"))}>
+              Productos
+              {productosAgotados > 0 && (
+                <span
+                  class="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white"
+                  title={`${productosAgotados} producto(s) agotados (sin stock)`}
+                >
+                  {productosAgotados}
+                </span>
+              )}
+              {productosStockBajo > 0 && (
+                <span
+                  class="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-bold text-white"
+                  title={`${productosStockBajo} producto(s) con stock bajo`}
+                >
+                  {productosStockBajo}
+                </span>
+              )}
+            </a>
+            <a href="/admin/categorias" class={claseNav(ruta.startsWith("/admin/categorias"))}>Categorías</a>
+            <a href="/admin/resenas" class={claseNav(ruta.startsWith("/admin/resenas"))}>
+              Reseñas
+              {resenasPendientes > 0 && (
+                <span
+                  class="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-bold text-white"
+                  title={`${resenasPendientes} reseña(s) pendiente(s) de aprobar`}
+                >
+                  {resenasPendientes}
+                </span>
+              )}
+            </a>
+            <a href="/admin/proveedores" class={claseNav(ruta.startsWith("/admin/proveedores"))}>
+              Proveedores
+              {proveedoresPendientes > 0 && (
+                <span
+                  class="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-bold text-white"
+                  title={`${proveedoresPendientes} postulación(es) pendiente(s) de contactar`}
+                >
+                  {proveedoresPendientes}
+                </span>
+              )}
+            </a>
+          </nav>
+          <div class="flex items-center gap-4 text-sm">
+            <a href="/" target="_blank" rel="noopener" class="text-plata hover:text-white">Ver sitio ↗</a>
+            <form method="POST" action={actions.cerrarSesion}>
+              <button type="submit" class="text-plata hover:text-white">Cerrar sesión</button>
+            </form>
+          </div>
+        </div>
+      </header>
+      <div class="h-[5px] bg-plata" aria-hidden="true"></div>
+    )}
+
+    <main class={`mx-auto ${anchoMax} px-4 py-8`}>
+      <slot />
+    </main>
+  </body>
+</html>

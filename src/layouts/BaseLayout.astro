@@ -1,0 +1,403 @@
+---
+import "../styles/global.css";
+import { SITE } from "../lib/site";
+import { META_PIXEL_ID } from "../lib/meta";
+import OrganizationSchema from "../components/schema/OrganizationSchema.astro";
+import CarritoDrawer from "../components/cart/CarritoDrawer.astro";
+import SelectorVarianteModal from "../components/cart/SelectorVarianteModal.astro";
+import BotonWhatsApp from "../components/layout/BotonWhatsApp.astro";
+
+interface Props {
+  titulo: string;
+  descripcion: string;
+  canonical?: string;
+  imagenOg?: string;
+  noindex?: boolean;
+}
+
+const {
+  titulo,
+  descripcion,
+  canonical = Astro.url.pathname,
+  imagenOg = "/og-default.png", // avatar de redes del manual (1080²). Pendiente: una OG de 1200x630
+  noindex = false,
+} = Astro.props;
+
+const urlCanonical = new URL(canonical, SITE.url).toString();
+const { gtm, googleAds } = SITE.medicion;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {/* 📊 Google Tag Manager — sólo si SITE.medicion.gtm tiene contenedor.
+        Va lo más arriba posible del <head>, que es como Google lo pide.
+        ⚠️ GTM es para LinkedIn y GA4. Las conversiones de Ads y el píxel de
+        Meta salen por código (medicion.ts, meta.ts): armarlas también en GTM
+        las contaría dos veces, y eso no falla — se ve como una campaña que
+        mejoró. */}
+    {gtm && (
+      <script is:inline define:vars={{ gtm }}>
+        (function (w, d, s, l, i) {
+          w[l] = w[l] || []; w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s),
+              dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true; j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', gtm);
+      </script>
+    )}
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="canonical" href={urlCanonical} />
+
+    {/* 📘 Verificación de dominio de Meta. Tiene que venir del servidor y
+        dentro del <head>: si la inyecta JavaScript, Meta no la acepta. */}
+    {SITE.medicion.metaVerificacionDominio && (
+      <meta name="facebook-domain-verification" content={SITE.medicion.metaVerificacionDominio} />
+    )}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    {/* Inter Tight: la única familia del manual de marca (mismo trazo que el logo). */}
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#181C37" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <title>{titulo} | {SITE.nombre}</title>
+    <meta name="description" content={descripcion} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.nombre} />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={urlCanonical} />
+    <meta property="og:image" content={new URL(imagenOg, SITE.url).toString()} />
+    <meta property="og:locale" content="es_CO" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={titulo} />
+    <meta name="twitter:description" content={descripcion} />
+    <meta name="twitter:image" content={new URL(imagenOg, SITE.url).toString()} />
+
+    <OrganizationSchema />
+
+    {/* 📊 Google Ads — la etiqueta base, sólo con cuenta configurada.
+        Se carga en TODAS las páginas porque la conversión puede dispararse
+        desde el carrito, la ficha de producto o contacto. */}
+    {googleAds && (
+      <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${googleAds}`}></script>
+    )}
+    {googleAds && (
+      <script is:inline define:vars={{ googleAds }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        window.gtag = gtag;
+        gtag("js", new Date());
+        gtag("config", googleAds);
+      </script>
+    )}
+
+    {/* 📘 Meta — el píxel de Facebook e Instagram.
+
+        El `init` y el `PageView` van detrás de la misma guarda de dominio que
+        usa Google Ads (src/lib/dominio.ts). Sin ella, cada `npm run dev` y cada
+        preview de Vercel mandaría visitas falsas a la cuenta real.
+
+        ⚠️ NO añadirlo también en GTM. Cargado dos veces, Meta cuenta cada
+        evento doble: reporta el doble de conversiones al mismo costo, el ROAS
+        se ve inflado y las campañas se escalan contra un número inventado. No
+        falla de forma visible — se ve como una campaña que mejoró. */}
+    {META_PIXEL_ID && (
+    <script is:inline define:vars={{ metaPixelId: META_PIXEL_ID, dominios: SITE.dominios }}>
+      (function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n; n.loaded = !0; n.version = "2.0"; n.queue = [];
+        t = b.createElement(e); t.async = !0; t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+
+      var host = window.location.hostname;
+      var esReal = dominios.some(function (d) {
+        return host === d || host.endsWith("." + d);
+      });
+      if (esReal) {
+        fbq("init", metaPixelId);
+        fbq("track", "PageView");
+      }
+    </script>
+    )}
+
+    <slot name="head" />
+  </head>
+  <body>
+    {/* GTM sin JavaScript. Es lo que Google pide justo después de abrir el
+        <body> — no mide casi nadie, pero cuesta cero y evita un hueco. */}
+    {gtm && (
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${gtm}`}
+          height="0" width="0" style="display:none;visibility:hidden"></iframe>
+      </noscript>
+    )}
+    <slot />
+
+    <CarritoDrawer />
+    <SelectorVarianteModal />
+
+    {/* 🔴 Urgente del 13/08: el 85% del tráfico es móvil y no tenía a la vista
+        cómo escribir. Va a la izquierda porque el widget de Arkco ocupa la
+        derecha — dos flotantes en el mismo rincón se tapan. */}
+    <BotonWhatsApp />
+
+    {/* Arkco360 — el asesor que atiende en el sitio.
+
+        En Wincol se quitó 20 horas para medir si se comía los leads, y el
+        experimento dijo lo contrario: la única venta pagada del mes había
+        entrado por acá. Va en el layout y no página por página porque quien
+        duda lo hace mirando un producto. El color es el Azul Mando: un
+        flotante con el color de otra marca se lee como publicidad ajena. */}
+    {SITE.arkco.widget && (
+      <script
+        is:inline
+        src={`${SITE.arkco.api}/widget.js`}
+        data-tenant={SITE.arkco.tenant}
+        data-name={SITE.nombre}
+        data-color="#181C37"
+        data-position="right"
+        data-api={SITE.arkco.api}
+        defer
+      ></script>
+    )}
+
+    {/* 📊 Los botones de WhatsApp que SÍ son enlaces: ficha de producto,
+        «escríbenos por WhatsApp» y contacto. El del carrito no pasa por acá
+        —abre con window.open— y reporta por su cuenta. */}
+    <script>
+      import { reportarClicWhatsApp, registrarIntencion } from "../lib/medicion";
+      import { leerCodigoRefCliente } from "../lib/atribucion";
+      import { EVENTOS, empujar } from "../lib/capa-datos";
+      import { lead as leadMeta } from "../lib/meta";
+
+      /**
+       * Red de seguridad. Desde ahora TODAS las puertas ponen el código: las
+       * que arma el cliente lo leen de la cookie, y las que pinta Astro en el
+       * servidor lo reciben por parámetro desde Astro.cookies.
+       *
+       * Esto queda por si algún enlace nuevo se agrega sin pasar por
+       * whatsapp.ts, o si una página cacheada trae el href viejo. Los que ya
+       * traen código se saltan solos por el `includes("Ref:")`.
+       */
+      function sellarEnlacesWhatsApp() {
+        const codigo = leerCodigoRefCliente();
+        if (!codigo) return;
+
+        document.querySelectorAll<HTMLAnchorElement>('a[href*="wa.me/"]').forEach((enlace) => {
+          try {
+            const url = new URL(enlace.href);
+            const texto = url.searchParams.get("text");
+            if (!texto || texto.includes("Ref:")) return;
+
+            url.searchParams.set("text", `${texto}\n\nRef: ${codigo}`);
+            enlace.href = url.toString();
+          } catch {
+            // Enlace mal formado: se deja intacto para no romper el clic.
+          }
+        });
+      }
+
+      sellarEnlacesWhatsApp();
+      // La ficha de producto reconstruye su enlace al cambiar de variante.
+      window.addEventListener("mc:enlaces-actualizados", sellarEnlacesWhatsApp);
+
+      document.addEventListener("click", (e) => {
+        const enlace = (e.target as HTMLElement)?.closest?.('a[href*="wa.me"]');
+        if (!enlace) return;
+
+        const origen = (enlace as HTMLElement).dataset.waOrigen ?? "enlace";
+        reportarClicWhatsApp(origen);
+        // Para Meta y LinkedIn, vía GTM. Ads ya se reportó en la línea de
+        // arriba con gtag directo: NO debe haber etiqueta de Ads en GTM.
+        empujar(EVENTOS.whatsapp, { origen });
+        leadMeta(origen);
+        // El pedido del carrito NO pasa por acá —abre con window.open— y deja
+        // su propia fila desde reportarCompra, con el valor real.
+        registrarIntencion({ evento: "whatsapp_consulta", origen });
+      });
+    </script>
+
+    <script>
+      import {
+        $carrito,
+        agregarAlCarrito,
+        quitarDelCarrito,
+        actualizarCantidadCarrito,
+        vaciarCarrito,
+        totalItemsCarrito,
+        type ItemCarrito,
+      } from "../stores/carrito";
+      import { $favoritos, alternarFavorito, esFavorito } from "../stores/favoritos";
+      import { reportarAgregadoAlCarrito } from "../lib/medicion";
+      import { EVENTOS as EV_CAPA, empujar } from "../lib/capa-datos";
+      import { agregarAlCarrito as agregarMeta } from "../lib/meta";
+
+      function actualizarBadge(carrito: readonly ItemCarrito[]) {
+        const badge = document.getElementById("contador-carrito");
+        if (badge) badge.textContent = String(totalItemsCarrito(carrito));
+      }
+
+      actualizarBadge($carrito.get());
+      $carrito.subscribe(actualizarBadge);
+
+      // Pinta el estado (corazón lleno/vacío) de todos los botones de favorito
+      // presentes en la página actual, cada vez que cambia el store.
+      function actualizarBotonesFavoritos(skuTocado?: string) {
+        document.querySelectorAll<HTMLElement>("[data-favorito-toggle]").forEach((boton) => {
+          const sku = boton.dataset.sku;
+          if (!sku) return;
+          const activo = esFavorito(sku);
+          boton.setAttribute("aria-pressed", String(activo));
+          boton.classList.toggle("text-red-500", activo);
+          boton.classList.toggle("text-slate-400", !activo);
+          const svg = boton.querySelector("svg");
+          svg?.setAttribute("fill", activo ? "currentColor" : "none");
+
+          // Feedback visual claro (más que el simple cambio de color) en el
+          // botón que se acaba de tocar, para que no parezca que "no hizo nada".
+          if (sku === skuTocado) {
+            boton.animate(
+              [{ transform: "scale(1)" }, { transform: "scale(1.4)" }, { transform: "scale(1)" }],
+              { duration: 300, easing: "ease-out" }
+            );
+          }
+        });
+      }
+
+      function actualizarBadgeFavoritos() {
+        const badge = document.getElementById("contador-favoritos");
+        if (badge) badge.textContent = String($favoritos.get().length);
+      }
+
+      actualizarBotonesFavoritos();
+      actualizarBadgeFavoritos();
+      $favoritos.subscribe(() => {
+        actualizarBotonesFavoritos();
+        actualizarBadgeFavoritos();
+      });
+
+      document.addEventListener("click", (evento) => {
+        const boton = (evento.target as HTMLElement).closest<HTMLElement>("[data-favorito-toggle]");
+        if (!boton) return;
+
+        const sku = boton.dataset.sku;
+        const slug = boton.dataset.slug;
+        const nombre = boton.dataset.nombre;
+        const precio = Number(boton.dataset.precio);
+        if (!sku || !slug || !nombre || Number.isNaN(precio)) return;
+
+        alternarFavorito({ sku, slug, nombre, precio, imagen: boton.dataset.imagen });
+        actualizarBotonesFavoritos(sku);
+      });
+
+      // Delegado: los botones "Añadir al carrito" de la grilla (ProductCard)
+      // no agregan directo — abren el selector de talla/color (estilo Temu),
+      // ya que todo producto tiene variantes obligatorias.
+      document.addEventListener("click", (evento) => {
+        const boton = (evento.target as HTMLElement).closest<HTMLElement>(
+          "[data-abrir-selector-variante]"
+        );
+        if (!boton || !boton.dataset.producto) return;
+
+        try {
+          const producto = JSON.parse(boton.dataset.producto);
+          window.dispatchEvent(new CustomEvent("abrir-selector-variante", { detail: producto }));
+        } catch {
+          // data-producto mal formado: no hacemos nada.
+        }
+      });
+
+      // Delegado: cubre los botones "Añadir al carrito" de BuyBox (PDP) y del
+      // SelectorVarianteModal (grilla), incluidos los que se rendericen
+      // dinámicamente más adelante. Ambos mantienen sus data-attributes
+      // (variante-id/talla/color/cantidad) sincronizados con la selección
+      // vigente antes de que el usuario pueda hacer click.
+      document.addEventListener("click", (evento) => {
+        const boton = (evento.target as HTMLElement).closest<HTMLElement>(
+          "[data-agregar-carrito]"
+        );
+        if (!boton) return;
+
+        const sku = boton.dataset.sku;
+        const nombre = boton.dataset.nombre;
+        const precio = Number(boton.dataset.precio);
+        const varianteId = boton.dataset.varianteId;
+        const talla = boton.dataset.talla;
+        const color = boton.dataset.color;
+        if (!sku || !nombre || Number.isNaN(precio) || !varianteId || !talla || !color) return;
+
+        let cantidad = 1;
+        const scope = boton.closest<HTMLElement>("[data-cantidad-scope]");
+        if (scope) {
+          const input = scope.querySelector<HTMLInputElement>("[data-cantidad]");
+          cantidad = Number(input?.value) || 1;
+        }
+
+        agregarAlCarrito(
+          { varianteId, sku, nombre, precio, imagen: boton.dataset.imagen, talla, color },
+          cantidad
+        );
+        // 📊 Señal temprana de intención de compra. Va acá, en el oyente
+        // delegado, porque este es el ÚNICO camino por el que entra algo al
+        // carrito en todo el catálogo — ficha, vista previa y modal de
+        // variante pasan todos por acá. Un disparador por selector de botón
+        // se perdería alguno de los tres.
+        reportarAgregadoAlCarrito({ sku, precio, cantidad }, "boton-agregar");
+        empujar(EV_CAPA.agregarCarrito, {
+          value: precio * cantidad,
+          items: [{ item_id: sku, item_name: nombre, price: precio, quantity: cantidad }],
+        });
+        agregarMeta({ sku, precio, cantidad });
+        window.dispatchEvent(new CustomEvent("abrir-carrito"));
+
+        const textoOriginal = boton.textContent;
+        boton.textContent = "Añadido ✓";
+        setTimeout(() => {
+          boton.textContent = textoOriginal;
+        }, 1200);
+      });
+
+      // Bridge para Arkco360: el agente conversacional puede correr como un script
+      // externo que no comparte el grafo de módulos ESM de este bundle, así que
+      // exponemos una API imperativa simple sobre `window` en vez de forzarlo a
+      // importar los nanostores directamente.
+      declare global {
+        interface Window {
+          MCCarrito: {
+            agregar: typeof agregarAlCarrito;
+            quitar: typeof quitarDelCarrito;
+            actualizarCantidad: typeof actualizarCantidadCarrito;
+            vaciar: typeof vaciarCarrito;
+            obtener: typeof $carrito.get;
+            suscribir: typeof $carrito.subscribe;
+          };
+        }
+      }
+
+      window.MCCarrito = {
+        agregar: agregarAlCarrito,
+        quitar: quitarDelCarrito,
+        actualizarCantidad: actualizarCantidadCarrito,
+        vaciar: vaciarCarrito,
+        obtener: () => $carrito.get(),
+        suscribir: (fn) => $carrito.subscribe(fn),
+      };
+    </script>
+  </body>
+</html>

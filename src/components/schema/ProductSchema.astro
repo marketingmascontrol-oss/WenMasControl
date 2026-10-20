@@ -1,0 +1,43 @@
+---
+import type { ProductoConRelaciones, ResumenResenas } from "../../../types/product";
+import { SITE } from "../../lib/site";
+
+interface Props {
+  producto: ProductoConRelaciones;
+  resumenResenas?: ResumenResenas;
+}
+
+const { producto, resumenResenas } = Astro.props;
+
+const urlProducto = new URL(`/productos/${producto.slug}`, SITE.url).toString();
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  sku: producto.sku,
+  name: producto.nombre,
+  description: producto.descripcion_corta ?? producto.descripcion_larga ?? producto.nombre,
+  image: producto.imagenes.map((img) => img.url),
+  ...(producto.categoria && { category: producto.categoria.nombre }),
+  ...(resumenResenas && resumenResenas.total > 0
+    ? {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: Number(resumenResenas.promedio.toFixed(1)),
+          reviewCount: resumenResenas.total,
+        },
+      }
+    : {}),
+  offers: {
+    "@type": "Offer",
+    url: urlProducto,
+    priceCurrency: "COP",
+    price: producto.precio,
+    availability:
+      producto.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    itemCondition: "https://schema.org/NewCondition",
+  },
+};
+---
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />

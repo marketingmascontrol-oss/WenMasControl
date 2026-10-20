@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import FAQSchema from "../components/schema/FAQSchema.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { SITE } from "../lib/site";
+
+const categorias = await obtenerCategorias();
+
+// Contenido basado en información confirmada del negocio (envíos, facturación,
+// asesoría) + educación general del sector EPP. Sin inventar políticas
+// específicas (garantías, devoluciones) que no están confirmadas.
+const preguntas = [
+  {
+    pregunta: "¿Qué es un EPP y por qué es obligatorio en mi empresa?",
+    respuesta:
+      "Un EPP (Elemento de Protección Personal) es cualquier equipo diseñado para proteger al trabajador de riesgos en su labor: cascos, guantes, botas, protección auditiva y visual, entre otros. La normativa de seguridad y salud en el trabajo exige que las empresas doten a su personal con EPP adecuado según el riesgo de cada labor.",
+  },
+  {
+    pregunta: "¿Hacen envíos a nivel nacional?",
+    respuesta:
+      "Sí, realizamos envíos a nivel nacional en Colombia. En Bogotá, el envío es gratis en compras desde $300.000.",
+  },
+  {
+    pregunta: "¿Puedo comprar al por mayor o en grandes volúmenes?",
+    respuesta:
+      "Sí, somos proveedores B2B de dotación y EPP: trabajamos con empresas de construcción, industria y minería que necesitan comprar por volumen, con precios preferenciales y facturación empresarial.",
+  },
+  {
+    pregunta: "¿Ofrecen asesoría para elegir el EPP correcto?",
+    respuesta:
+      "Sí, brindamos asesoría técnica personalizada para ayudarte a elegir el equipo de protección adecuado según el riesgo y la actividad de tu empresa.",
+  },
+  {
+    pregunta: "¿Cómo elijo la talla correcta de botas o guantes de seguridad?",
+    respuesta:
+      "Te recomendamos medir el contorno de la mano (para guantes) o el largo del pie (para botas) y comparar con la guía de tallas del fabricante de cada producto. Si tienes dudas, nuestro equipo de asesoría técnica te puede ayudar a elegir la talla correcta antes de comprar.",
+  },
+  {
+    pregunta: "¿Cómo hago una cotización o pedido?",
+    respuesta:
+      "Puedes escribir directamente desde la sección de contacto del sitio, o agregar los productos que necesitas al carrito. Para compras al por mayor, te recomendamos escribirnos para una cotización con precios preferenciales.",
+  },
+] satisfies { pregunta: string; respuesta: string }[];
+---
+
+<BaseLayout
+  titulo="Preguntas frecuentes"
+  descripcion={`Preguntas frecuentes sobre dotación y EPP — ${SITE.descripcion}`}
+>
+  <Fragment slot="head">
+    <FAQSchema items={preguntas} />
+  </Fragment>
+
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-3xl px-4 py-12">
+    <h1 class="mb-8 text-2xl font-bold text-slate-900">Preguntas frecuentes</h1>
+
+    <div class="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+      {preguntas.map((item) => (
+        <details class="group p-5">
+          <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-slate-900 marker:content-none">
+            {item.pregunta}
+            <span class="ml-4 shrink-0 text-slate-400 group-open:rotate-45">+</span>
+          </summary>
+          <p class="mt-3 text-sm leading-relaxed text-slate-600">{item.respuesta}</p>
+        </details>
+      ))}
+    </div>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

@@ -1,0 +1,21 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import FormularioProducto from "../../../components/admin/FormularioProducto.astro";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { actions } from "astro:actions";
+
+const resultado = Astro.getActionResult(actions.guardarProducto);
+if (resultado && !resultado.error && resultado.data?.id) {
+  return Astro.redirect(`/admin/productos/${resultado.data.id}`);
+}
+
+const { data: categorias } = await supabaseAdmin.from("categorias").select("*").order("nombre");
+---
+
+<AdminLayout titulo="Nuevo producto">
+  <h1 class="mb-6 text-2xl font-bold text-slate-900">Nuevo producto</h1>
+
+  {resultado?.error && <p class="mb-4 text-sm text-red-600">{resultado.error.message}</p>}
+
+  <FormularioProducto categorias={categorias ?? []} />
+</AdminLayout>

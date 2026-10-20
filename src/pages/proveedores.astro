@@ -1,0 +1,153 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { SITE } from "../lib/site";
+import { actions } from "astro:actions";
+
+const categorias = await obtenerCategorias();
+
+const resultado = Astro.getActionResult(actions.crearSolicitudProveedor);
+const enviadaOk = Boolean(resultado && !resultado.error);
+
+const beneficios = [
+  {
+    titulo: "Alcance nacional",
+    texto: "Tus productos llegan a empresas de construcción, industria y minería en todo el país.",
+  },
+  {
+    titulo: "Volumen constante",
+    texto: "Compras recurrentes de dotación y EPP, no pedidos aislados.",
+  },
+  {
+    titulo: "Pagos puntuales",
+    texto: "Procesos claros de facturación empresarial y pago para proveedores homologados.",
+  },
+  {
+    titulo: "Proceso simple",
+    texto: "Evaluamos tu propuesta y te contactamos en pocos días hábiles.",
+  },
+];
+---
+
+<BaseLayout
+  titulo="Proveedores"
+  descripcion={`¿Quieres ser proveedor de ${SITE.nombre}? Trabaja con nosotros — ${SITE.descripcion}`}
+>
+  <Header categorias={categorias} />
+
+  <main>
+    <section class="bg-brand-500 text-white">
+      <div class="mx-auto max-w-5xl px-4 py-16 text-center">
+        <p class="text-sm font-semibold text-plata">+Control</p>
+        <h1 class="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">
+          ¿Quieres ser proveedor? Trabaja con nosotros
+        </h1>
+        <p class="mx-auto mt-4 max-w-2xl text-slate-300">
+          Súmate a la red de proveedores de dotación y elementos de protección personal de {SITE.nombre}.
+          Cuéntanos qué ofreces y evaluamos la alianza.
+        </p>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-5xl px-4 py-12">
+      <dl class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {beneficios.map((b) => (
+          <div class="rounded-lg border border-slate-200 bg-white p-5">
+            <dt class="font-semibold text-slate-900">{b.titulo}</dt>
+            <dd class="mt-1.5 text-sm text-slate-600">{b.texto}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <section class="mx-auto max-w-2xl px-4 pb-16">
+      <div class="rounded-lg border border-slate-200 bg-white p-6 sm:p-8">
+        <h2 class="text-xl font-bold text-slate-900">Postúlate como proveedor</h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Completa el formulario y te contactamos para conocer más sobre tu empresa.
+        </p>
+
+        {enviadaOk && (
+          <p class="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            ¡Gracias por tu interés! Recibimos tu postulación y te vamos a contactar pronto.
+          </p>
+        )}
+        {resultado?.error && (
+          <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{resultado.error.message}</p>
+        )}
+
+        <form method="POST" action={actions.crearSolicitudProveedor} class="mt-6 space-y-4">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Empresa</label>
+              <input
+                name="empresa"
+                required
+                maxlength="150"
+                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Nombre de contacto</label>
+              <input
+                name="contacto_nombre"
+                required
+                maxlength="100"
+                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Email</label>
+              <input
+                type="email"
+                name="email"
+                required
+                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Teléfono</label>
+              <input
+                type="tel"
+                name="telefono"
+                required
+                maxlength="30"
+                class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">¿Qué productos ofreces?</label>
+            <input
+              name="categoria_productos"
+              required
+              maxlength="150"
+              placeholder="Ej: Guantes de seguridad, botas industriales, cascos..."
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Cuéntanos más (opcional)</label>
+            <textarea
+              name="mensaje"
+              rows="4"
+              maxlength="1000"
+              placeholder="Capacidad de producción, certificaciones, clientes actuales..."
+              class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+            ></textarea>
+          </div>
+
+          <button type="submit" class="w-full rounded-md bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-400 sm:w-fit sm:px-8">
+            Enviar postulación
+          </button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

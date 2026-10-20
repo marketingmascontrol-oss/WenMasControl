@@ -1,0 +1,60 @@
+---
+import type { Categoria } from "../../../types/product";
+
+interface Props {
+  categorias: Categoria[];
+}
+
+// «¿Qué necesita proteger?»: el comprador de EPP piensa en una parte del cuerpo
+// o en un riesgo, no en el nombre de la categoría. El mosaico pone las
+// categorías a un toque desde la home, cada una con su foto de portada (se
+// carga en /admin/categorias). Sin foto, la tarjeta igual funciona con el
+// símbolo de la marca.
+const { categorias } = Astro.props;
+const visibles = categorias.filter((c) => c.slug !== "promociones").slice(0, 12);
+---
+
+{visibles.length > 0 && (
+  <section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+    <div class="grid gap-6 sm:grid-cols-[180px_1fr] sm:gap-8">
+      <p class="pt-2 text-sm font-semibold text-acero">01 · Catálogo</p>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h2 class="text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
+          ¿Qué necesita proteger?
+        </h2>
+        <a href="/categorias" class="text-sm font-semibold text-brand-500 underline-offset-4 hover:underline">
+          Ver todo el catálogo →
+        </a>
+      </div>
+    </div>
+
+    <ul class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {visibles.map((categoria) => (
+        <li>
+          <a
+            href={`/categorias/${categoria.slug}`}
+            class="group relative flex aspect-[4/3] flex-col justify-end overflow-hidden rounded-[6px] bg-tecnico p-4 transition hover:bg-brand-500"
+          >
+            {categoria.imagen_url ? (
+              <img
+                src={categoria.imagen_url}
+                alt=""
+                loading="lazy"
+                class="absolute inset-0 h-full w-full object-contain p-6 pb-14 mix-blend-multiply transition duration-300 group-hover:scale-105 group-hover:mix-blend-normal"
+              />
+            ) : (
+              <img src="/simbolo-color.svg" alt="" class="absolute right-4 top-4 h-10 w-10 opacity-25 transition group-hover:opacity-60" />
+            )}
+            <span class="relative flex items-center justify-between gap-2">
+              <span class="text-[15px] font-extrabold leading-tight tracking-[-0.01em] text-brand-500 transition group-hover:text-white sm:text-base">
+                {categoria.nombre}
+              </span>
+              <span class="text-acero transition group-hover:translate-x-0.5 group-hover:text-white" aria-hidden="true">→</span>
+            </span>
+            <span class="absolute inset-x-0 bottom-0 h-[3px] bg-transparent transition group-hover:bg-plata" aria-hidden="true"></span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

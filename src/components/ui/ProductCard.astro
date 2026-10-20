@@ -1,0 +1,136 @@
+---
+import type { ProductoConRelaciones, ResumenResenas } from "../../../types/product";
+import { formatearPrecio } from "../../lib/formato";
+import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
+import { COOKIE_REF } from "../../lib/atribucion";
+import Estrellas from "./Estrellas.astro";
+
+interface Props {
+  producto: ProductoConRelaciones;
+  resumenResenas?: ResumenResenas;
+}
+
+const { producto, resumenResenas = { promedio: 0, total: 0 } } = Astro.props;
+const imagenPrincipal = producto.imagenes.find((img) => img.es_principal) ?? producto.imagenes[0];
+// El código se lee en el servidor: esta tarjeta se pinta en listados y en la
+// venta cruzada del carrito, y no puede depender de que el JS alcance a sellarla.
+const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
+  `Hola, quiero consultar disponibilidad de: ${producto.nombre} (SKU: ${producto.sku}).`,
+  Astro.cookies.get(COOKIE_REF)?.value ?? null,
+);
+---
+
+{/* Tarjeta +Control: la foto sobre Blanco Técnico, el dato técnico (Ref.)
+    en SemiBold Acero como pide el manual, y la franja plata que aparece como
+    borde inferior al pasar el cursor. El rojo sólo marca la promoción. */}
+<article class="group relative flex flex-col overflow-hidden rounded-[6px] border border-linea bg-white transition hover:border-plata hover:shadow-[0_10px_30px_-12px_rgba(24,28,55,0.25)]">
+  <button
+    type="button"
+    data-favorito-toggle
+    data-sku={producto.sku}
+    data-slug={producto.slug}
+    data-nombre={producto.nombre}
+    data-precio={producto.precio}
+    data-imagen={imagenPrincipal?.url}
+    aria-label="Guardar en favoritos"
+    aria-pressed="false"
+    class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-acero shadow-sm hover:text-senal"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 20.5s-7-4.35-9.5-8.7C.8 8.6 2 5 5.3 4.2c2-.5 3.9.4 4.7 2 .8-1.6 2.7-2.5 4.7-2 3.3.8 4.5 4.4 2.8 7.6-2.5 4.35-9.5 8.7-9.5 8.7z" />
+    </svg>
+  </button>
+
+  {producto.en_promocion && (
+    <span class="absolute left-3 top-3 z-10 rounded-[4px] bg-white px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-senal shadow-sm">
+      Promoción
+    </span>
+  )}
+
+  <div class="relative bg-tecnico">
+    <a href={`/productos/${producto.slug}`} class="block">
+      <div class="flex aspect-square items-center justify-center overflow-hidden p-5">
+        {imagenPrincipal ? (
+          <img
+            src={imagenPrincipal.url}
+            alt={imagenPrincipal.alt ?? producto.nombre}
+            loading="lazy"
+            class="h-full w-full object-contain mix-blend-multiply transition duration-300 group-hover:scale-[1.04]"
+          />
+        ) : (
+          <img src="/simbolo-color.svg" alt="" class="h-16 w-16 opacity-20" />
+        )}
+      </div>
+    </a>
+
+    {producto.stock > 0 && (
+      <button
+        type="button"
+        data-abrir-selector-variante
+        data-producto={JSON.stringify({
+          sku: producto.sku,
+          nombre: producto.nombre,
+          precio: producto.precio,
+          imagen: imagenPrincipal?.url,
+          variantes: producto.variantes,
+        })}
+        aria-label="Vista rápida: elegir talla y color"
+        class="absolute inset-x-3 bottom-3 z-10 flex translate-y-1 items-center justify-center gap-1.5 rounded-[6px] bg-brand-500/95 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 max-lg:hidden"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        Vista rápida
+      </button>
+    )}
+  </div>
+  <div class="h-[3px] bg-linea transition group-hover:bg-plata" aria-hidden="true"></div>
+
+  <div class="flex flex-1 flex-col p-4">
+    <p class="text-[12px] font-semibold tabular-nums text-acero">Ref. {producto.sku}</p>
+    <h3 class="mt-1 line-clamp-2 text-[15px] font-bold leading-snug tracking-[-0.01em] text-brand-500">
+      <a href={`/productos/${producto.slug}`} class="after:absolute after:inset-0 after:content-['']">{producto.nombre}</a>
+    </h3>
+
+    {resumenResenas.total > 0 && (
+      <div class="mt-1">
+        <Estrellas promedio={resumenResenas.promedio} total={resumenResenas.total} />
+      </div>
+    )}
+
+    <div class="mt-auto pt-3">
+      <p class="text-xl font-black tracking-[-0.02em] text-brand-500">{formatearPrecio(producto.precio)}</p>
+      <p class:list={["mt-0.5 flex items-center gap-1.5 text-xs", producto.stock > 0 ? "text-acero" : "text-acero/80"]}>
+        <span class:list={["h-1.5 w-1.5 rounded-full", producto.stock > 0 ? "bg-[#1FAF55]" : "bg-plata"]} aria-hidden="true"></span>
+        {producto.stock > 0 ? `${producto.stock} disponibles` : "Disponibilidad bajo solicitud"}
+      </p>
+
+      {producto.stock > 0 ? (
+        <button
+          type="button"
+          data-abrir-selector-variante
+          data-producto={JSON.stringify({
+            sku: producto.sku,
+            nombre: producto.nombre,
+            precio: producto.precio,
+            imagen: imagenPrincipal?.url,
+            variantes: producto.variantes,
+          })}
+          class="relative z-10 mt-3 w-full rounded-[6px] bg-brand-500 py-2.5 text-sm font-bold text-white transition hover:bg-brand-400"
+        >
+          Agregar al pedido
+        </button>
+      ) : (
+        <a
+          href={enlaceConsultaDisponibilidad}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="relative z-10 mt-3 flex w-full items-center justify-center rounded-[6px] border border-brand-500 py-2.5 text-sm font-bold text-brand-500 transition hover:bg-tecnico"
+        >
+          Consultar disponibilidad
+        </a>
+      )}
+    </div>
+  </div>
+</article>

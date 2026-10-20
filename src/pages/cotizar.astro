@@ -1,0 +1,294 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { construirEnlaceWhatsAppAsesor } from "../lib/whatsapp";
+import { COOKIE_REF } from "../lib/atribucion";
+import { SITE } from "../lib/site";
+
+// Página de destino de toda la pauta. Tiene UN solo objetivo: abrir la
+// conversación con Arkco360, que es quien arma la cotización empresarial y
+// cierra la venta.
+//
+// 🔴 SIN FORMULARIO, DECISIÓN DEL DUEÑO (25/08/2026): las ventas pasan por
+// Arkco. Un formulario acá competiría con el bot por el mismo clic y partiría
+// los leads en dos bandejas —una que contesta al instante y otra que espera a
+// que alguien la revise—. El bot además atiende a cualquier hora, así que el
+// argumento de «una salida para quien llega fuera de horario» tampoco se
+// sostenía.
+//
+// Lo que sí hace la página es CALIFICAR antes de mandar: las dos selecciones se
+// escriben dentro del mensaje, así Arkco arranca sabiendo qué necesita la
+// persona y para cuánta gente, en vez de gastar tres turnos preguntándolo.
+const categorias = await obtenerCategorias();
+
+const enlaceAsesorBase = construirEnlaceWhatsAppAsesor(
+  "Necesito una cotización por volumen.",
+  Astro.cookies.get(COOKIE_REF)?.value ?? null,
+);
+
+const RANGOS = [
+  "1 a 20 personas",
+  "21 a 50 personas",
+  "51 a 200 personas",
+  "Más de 200 personas",
+];
+
+const GARANTIAS = [
+  { titulo: "Precio por volumen", detalle: "Descuentos progresivos desde 10 unidades" },
+  { titulo: "Facturación electrónica", detalle: "Con NIT, para tu área contable" },
+  { titulo: "Despacho nacional", detalle: "A todas las ciudades del país" },
+  { titulo: "Marcas certificadas", detalle: "3M, Croydon, Portwest, Steelpro, Libus" },
+];
+
+const PASOS = [
+  {
+    titulo: "Nos dices qué necesitas",
+    detalle: "Eliges la categoría y para cuántas personas. Toma diez segundos.",
+  },
+  {
+    titulo: "Un asesor te responde al instante",
+    detalle: "Se abre WhatsApp con tu solicitud ya escrita, a cualquier hora del día.",
+  },
+  {
+    titulo: "Recibes la cotización empresarial",
+    detalle: "Con precio por volumen, disponibilidad real y tiempos de entrega.",
+  },
+];
+
+const ICONO_WA_D = "M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.87 9.87 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.13h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.11.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.36c0-4.53 3.7-8.22 8.23-8.22 2.2 0 4.26.86 5.81 2.41a8.16 8.16 0 0 1 2.41 5.82c0 4.53-3.69 8.21-8.23 8.21Z";
+---
+
+<BaseLayout
+  titulo="Cotiza tu dotación al por mayor"
+  descripcion="Cotiza dotación, EPP y uniformes al por mayor para tu empresa. Precios por volumen, facturación electrónica y despacho a toda Colombia. Te respondemos por WhatsApp al instante."
+>
+  <Header categorias={categorias} />
+
+  <main>
+    <!-- ================= Conversación directa ================= -->
+    <section class="bg-brand-500 text-white">
+      <div class="mx-auto max-w-4xl px-4 py-14 text-center sm:py-20">
+        <p class="mb-4 inline-flex items-center gap-3 text-sm font-semibold text-plata"><span class="h-[3px] w-8 bg-senal" aria-hidden="true"></span>
+          Cotización para empresas
+        </p>
+
+        <h1 class="text-3xl font-extrabold leading-[1.1] sm:text-4xl lg:text-5xl">
+          Dinos qué necesitas y te pasamos la cotización
+        </h1>
+
+        <p class="mx-auto mt-5 max-w-2xl text-base text-slate-200 sm:text-lg">
+          Selecciona abajo lo que buscas y te llevamos directo al chat con un
+          asesor, con tu solicitud ya escrita. Sin formularios y sin armar
+          carrito.
+        </p>
+
+        <!-- Armador de solicitud: cada selección se anexa al mensaje, para que
+             Arkco360 reciba el pedido ya calificado y no tenga que arrancar
+             preguntando lo básico. -->
+        <div class="mx-auto mt-10 max-w-2xl rounded-xl border border-white/15 bg-white/5 p-5 text-left backdrop-blur sm:p-7">
+          <fieldset>
+            <legend class="text-sm font-bold uppercase tracking-wider text-slate-300">
+              ¿Qué necesitas?
+              <span class="ml-1 font-medium normal-case tracking-normal text-slate-400">
+                — puedes elegir varias
+              </span>
+            </legend>
+            <div class="mt-3 flex flex-wrap gap-2">
+              {categorias.map((categoria) => (
+                <button
+                  type="button"
+                  data-opcion="categoria"
+                  data-valor={categoria.nombre}
+                  aria-pressed="false"
+                  class="rounded-full border border-white/25 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/60 hover:bg-white/10"
+                >
+                  {categoria.nombre}
+                </button>
+              ))}
+              <button
+                type="button"
+                data-opcion="categoria"
+                data-valor="Dotación completa"
+                aria-pressed="false"
+                class="rounded-full border border-white/25 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/60 hover:bg-white/10"
+              >
+                Dotación completa
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset class="mt-6">
+            <legend class="text-sm font-bold uppercase tracking-wider text-slate-300">
+              ¿Para cuántas personas?
+            </legend>
+            <div class="mt-3 flex flex-wrap gap-2">
+              {RANGOS.map((rango) => (
+                <button
+                  type="button"
+                  data-opcion="rango"
+                  data-valor={rango}
+                  aria-pressed="false"
+                  class="rounded-full border border-white/25 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/60 hover:bg-white/10"
+                >
+                  {rango}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <a
+            id="cotizar-whatsapp"
+            href={enlaceAsesorBase}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wa-origen="cotizar"
+            class="mt-8 flex w-full items-center justify-center gap-2.5 rounded-md bg-[#25D366] px-7 py-4 text-base font-bold text-slate-900 shadow-lg shadow-black/25 transition hover:bg-[#20BD5A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            <svg viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="currentColor" aria-hidden="true">
+              <path d={ICONO_WA_D} />
+            </svg>
+            <span id="cotizar-whatsapp-texto">Hablar con un asesor ahora</span>
+          </a>
+
+          <p class="mt-3 text-center text-xs text-slate-400">
+            Te respondemos al instante, a cualquier hora. También puedes llamarnos al
+            <a href={`tel:${SITE.telefonoTel}`} class="font-semibold text-slate-200 underline underline-offset-2">{SITE.telefono}</a>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Garantías ================= -->
+    <section class="border-b border-slate-200 bg-white">
+      <dl class="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 lg:grid-cols-4">
+        {GARANTIAS.map((item) => (
+          <div>
+            <dt class="text-sm font-bold text-slate-900">{item.titulo}</dt>
+            <dd class="mt-1 text-sm text-slate-600">{item.detalle}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+
+    <!-- ================= Cómo funciona ================= -->
+    <section class="mx-auto max-w-5xl px-4 py-14 sm:py-20">
+      <h2 class="text-center text-2xl font-bold text-slate-900">Cómo funciona</h2>
+
+      {/* La numeración acá sí es información: son tres pasos en orden, y saber
+          que son sólo tres es justamente lo que baja la fricción de escribir. */}
+      <ol class="mt-8 grid gap-8 sm:grid-cols-3">
+        {PASOS.map((paso, i) => (
+          <li>
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+              {i + 1}
+            </span>
+            <h3 class="mt-4 text-base font-bold text-slate-900">{paso.titulo}</h3>
+            <p class="mt-1 text-sm text-slate-600">{paso.detalle}</p>
+          </li>
+        ))}
+      </ol>
+
+      <div class="mt-12 text-center">
+        <a
+          href={enlaceAsesorBase}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-wa-origen="cotizar-pie"
+          class="inline-flex items-center justify-center gap-2.5 rounded-md bg-[#25D366] px-8 py-4 text-base font-bold text-slate-900 transition hover:bg-[#20BD5A]"
+        >
+          <svg viewBox="0 0 24 24" class="h-5 w-5 shrink-0" fill="currentColor" aria-hidden="true">
+            <path d={ICONO_WA_D} />
+          </svg>
+          Pedir mi cotización
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>
+
+<script>
+  import { construirEnlaceWhatsAppAsesor } from "../lib/whatsapp";
+
+  const enlace = document.getElementById("cotizar-whatsapp") as HTMLAnchorElement | null;
+  const textoBoton = document.getElementById("cotizar-whatsapp-texto");
+  if (!enlace) throw new Error("Falta el botón de WhatsApp en /cotizar");
+
+  // Las categorías son de selección MÚLTIPLE: una empresa que dota a su
+  // personal casi nunca necesita una sola cosa — pide botas, guantes y overoles
+  // en el mismo pedido. Obligar a elegir una sola partía la solicitud en varias
+  // conversaciones o dejaba a Arkco con la mitad del pedido.
+  //
+  // El rango de personas sí es de una sola: es un dato único de la empresa.
+  const categorias = new Set<string>();
+  let rango: string | undefined;
+
+  const CLASES_ACTIVAS = ["border-white", "bg-white", "text-slate-900"];
+  const CLASES_INACTIVAS = ["border-white/25", "text-slate-200"];
+
+  // Sólo cambian color y borde, NUNCA el grosor de la fuente: en una fila con
+  // flex-wrap, un chip que engorda al activarse cambia de ancho y reacomoda a
+  // todos los de al lado. Con selección múltiple eso significa que el chip que
+  // ibas a tocar se mueve justo antes de que lo toques.
+  function pintar(boton: HTMLElement, activo: boolean) {
+    CLASES_ACTIVAS.forEach((c) => boton.classList.toggle(c, activo));
+    CLASES_INACTIVAS.forEach((c) => boton.classList.toggle(c, !activo));
+    boton.setAttribute("aria-pressed", String(activo));
+  }
+
+  /** "botas, guantes y overoles" — se lee como lo escribiría una persona. */
+  function enumerar(valores: string[]): string {
+    if (valores.length <= 1) return valores[0] ?? "";
+    return `${valores.slice(0, -1).join(", ")} y ${valores[valores.length - 1]}`;
+  }
+
+  // El mensaje se arma con lo que la persona ya eligió, para que Arkco arranque
+  // con el pedido sobre la mesa en vez de un «hola» en frío.
+  function actualizarEnlace() {
+    const partes: string[] = [];
+    if (categorias.size > 0) partes.push(`Necesito: ${enumerar([...categorias])}.`);
+    if (rango) partes.push(`Para: ${rango}.`);
+
+    const haySeleccion = partes.length > 0;
+    enlace!.href = construirEnlaceWhatsAppAsesor(
+      haySeleccion ? partes.join("\n") : "Necesito una cotización por volumen.",
+    );
+
+    if (textoBoton) {
+      textoBoton.textContent = haySeleccion
+        ? "Enviar mi solicitud por WhatsApp"
+        : "Hablar con un asesor ahora";
+    }
+
+    // BaseLayout vuelve a inyectar el código de referencia en el href reescrito.
+    window.dispatchEvent(new CustomEvent("mc:enlaces-actualizados"));
+  }
+
+  document.addEventListener("click", (evt) => {
+    const boton = (evt.target as HTMLElement).closest<HTMLElement>("[data-opcion]");
+    if (!boton) return;
+
+    const valor = boton.dataset.valor;
+    if (!valor) return;
+
+    if (boton.dataset.opcion === "categoria") {
+      const activo = !categorias.has(valor);
+      if (activo) categorias.add(valor);
+      else categorias.delete(valor);
+      pintar(boton, activo);
+    } else {
+      // Rango: se apaga el resto del grupo antes de encender el elegido.
+      boton.parentElement
+        ?.querySelectorAll<HTMLElement>('[data-opcion="rango"]')
+        .forEach((otro) => pintar(otro, otro === boton));
+      rango = valor;
+    }
+
+    actualizarEnlace();
+  });
+
+  actualizarEnlace();
+</script>

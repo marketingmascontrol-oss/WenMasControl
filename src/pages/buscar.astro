@@ -1,0 +1,89 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import ProductCard from "../components/ui/ProductCard.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { buscarProductos } from "../lib/busqueda";
+import { obtenerResumenResenasPorProductos } from "../lib/resenas";
+import { SITE } from "../lib/site";
+
+const q = Astro.url.searchParams.get("q")?.trim() ?? "";
+
+// El cerebro lo pone Arkco, los datos los pone la tienda.
+//
+// Arkco traduce «algo para proteger los oídos» a «protector auditivo» —el
+// buscador propio comparaba palabras y devolvía un casco— y acá se busca ESE
+// término contra la base, para que el producto llegue completo, con sus reseñas
+// y sus variantes. Si Arkco no responde, se busca con las palabras del cliente
+// como toda la vida: un resultado imperfecto llega antes que ninguno.
+let asesoria = "";
+let terminos: string[] = [];
+if (q) {
+  try {
+    const ctrl = new AbortController();
+    const corte = setTimeout(() => ctrl.abort(), 1200);
+    const r = await fetch(
+      `https://social-icons-platform-production.up.railway.app/tienda/interpretar?q=${encodeURIComponent(q)}`,
+      { signal: ctrl.signal },
+    );
+    clearTimeout(corte);
+    if (r.ok) {
+      const d = await r.json();
+      terminos = d.terminos ?? [];
+      asesoria = d.asesoria ?? "";
+    }
+  } catch {
+    // Caído o lento: se sigue con el buscador de siempre.
+  }
+}
+
+async function buscarConCerebro(consulta: string) {
+  // Los términos traducidos, en orden, hasta que uno devuelva algo.
+  for (const termino of terminos) {
+    const r = await buscarProductos(termino);
+    if (r.length > 0) return r;
+  }
+  return buscarProductos(consulta);
+}
+
+const [categorias, resultados] = await Promise.all([
+  obtenerCategorias(),
+  q ? buscarConCerebro(q) : Promise.resolve([]),
+]);
+const resumenPorProducto = await obtenerResumenResenasPorProductos(resultados.map((p) => p.id));
+---
+
+<BaseLayout titulo={q ? `Resultados para "${q}"` : "Buscar"} descripcion={SITE.descripcion} noindex>
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-7xl px-4 py-8">
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">
+      {q ? <>Resultados para "<span class="text-brand-600">{q}</span>"</> : "Buscar productos"}
+    </h1>
+
+    {!q ? (
+      <p class="text-sm text-slate-500">Escribe algo en el buscador de arriba para ver resultados.</p>
+    ) : resultados.length > 0 ? (
+      <>
+        <p class="mb-4 text-sm text-slate-500">{resultados.length} producto{resultados.length === 1 ? "" : "s"} encontrado{resultados.length === 1 ? "" : "s"}.</p>
+        {asesoria && (
+          <p class="mb-4 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-slate-700">
+            {asesoria}
+          </p>
+        )}
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {resultados.map((producto) => (
+            <ProductCard producto={producto} resumenResenas={resumenPorProducto.get(producto.id)} />
+          ))}
+        </div>
+      </>
+    ) : (
+      <p class="text-sm text-slate-500">
+        No encontramos productos para "{q}". Prueba con otra palabra o mira el <a href="/categorias" class="text-brand-600 hover:text-brand-700">catálogo completo</a>.
+      </p>
+    )}
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

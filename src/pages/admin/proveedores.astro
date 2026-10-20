@@ -1,0 +1,89 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import { actions } from "astro:actions";
+
+const resultadoContactado = Astro.getActionResult(actions.marcarProveedorContactado);
+const resultadoEliminar = Astro.getActionResult(actions.eliminarSolicitudProveedor);
+const error = resultadoContactado?.error?.message ?? resultadoEliminar?.error?.message;
+
+const { data: solicitudes, error: errorSolicitudes } = await supabaseAdmin
+  .from("solicitudes_proveedor")
+  .select("*")
+  .order("created_at", { ascending: false });
+
+if (errorSolicitudes) throw new Error(errorSolicitudes.message);
+
+const pendientes = (solicitudes ?? []).filter((s) => !s.contactado);
+const contactadas = (solicitudes ?? []).filter((s) => s.contactado);
+
+function formatearFecha(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "short", day: "numeric" });
+}
+---
+
+<AdminLayout titulo="Proveedores">
+  <h1 class="mb-6 text-2xl font-bold text-slate-900">Postulaciones de proveedores</h1>
+
+  {error && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+
+  <section class="mb-10">
+    <h2 class="mb-3 text-lg font-bold text-slate-900">Pendientes de contactar ({pendientes.length})</h2>
+    {pendientes.length === 0 ? (
+      <p class="text-sm text-slate-500">No hay postulaciones pendientes.</p>
+    ) : (
+      <div class="space-y-3">
+        {pendientes.map((s) => (
+          <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-900">{s.empresa}</p>
+              <p class="text-xs text-slate-500">{formatearFecha(s.created_at)}</p>
+            </div>
+            <p class="mt-1 text-sm text-slate-700">
+              {s.contacto_nombre} · <a href={`mailto:${s.email}`} class="hover:underline">{s.email}</a> · {s.telefono}
+            </p>
+            <p class="mt-1 text-sm text-slate-600"><strong>Ofrece:</strong> {s.categoria_productos}</p>
+            {s.mensaje && <p class="mt-2 text-sm text-slate-600">{s.mensaje}</p>}
+            <div class="mt-3 flex gap-3">
+              <form method="POST" action={actions.marcarProveedorContactado}>
+                <input type="hidden" name="id" value={s.id} />
+                <button type="submit" class="text-sm font-medium text-green-700 hover:underline">Marcar como contactado</button>
+              </form>
+              <form method="POST" action={actions.eliminarSolicitudProveedor}>
+                <input type="hidden" name="id" value={s.id} />
+                <button type="submit" class="text-sm font-medium text-red-600 hover:underline">Eliminar</button>
+              </form>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+
+  <section>
+    <h2 class="mb-3 text-lg font-bold text-slate-900">Contactadas ({contactadas.length})</h2>
+    {contactadas.length === 0 ? (
+      <p class="text-sm text-slate-500">Todavía no hay postulaciones contactadas.</p>
+    ) : (
+      <div class="space-y-3">
+        {contactadas.map((s) => (
+          <div class="rounded-lg border border-slate-200 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm font-semibold text-slate-900">{s.empresa}</p>
+              <p class="text-xs text-slate-500">{formatearFecha(s.created_at)}</p>
+            </div>
+            <p class="mt-1 text-sm text-slate-700">
+              {s.contacto_nombre} · <a href={`mailto:${s.email}`} class="hover:underline">{s.email}</a> · {s.telefono}
+            </p>
+            <p class="mt-1 text-sm text-slate-600"><strong>Ofrece:</strong> {s.categoria_productos}</p>
+            {s.mensaje && <p class="mt-2 text-sm text-slate-600">{s.mensaje}</p>}
+            <form method="POST" action={actions.eliminarSolicitudProveedor} class="mt-3">
+              <input type="hidden" name="id" value={s.id} />
+              <button type="submit" class="text-sm font-medium text-red-600 hover:underline">Eliminar</button>
+            </form>
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+</AdminLayout>

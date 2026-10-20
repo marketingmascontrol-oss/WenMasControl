@@ -1,0 +1,16 @@
+-- Se elimina la tabla `cotizaciones`.
+--
+-- 🔴 DECISIÓN DEL DUEÑO (25/08/2026): las ventas pasan por Arkco360, que ya
+-- arma las cotizaciones empresariales. El formulario de /cotizar se quitó: un
+-- formulario compitiendo con el bot parte los leads en dos bandejas —una que
+-- contesta al instante y otra que espera a que alguien la revise— y el bot
+-- además atiende a cualquier hora.
+--
+-- La tabla se creó esta misma mañana (20260825000000) y nunca recibió una fila.
+-- Se borra en vez de dejarla vacía para que nadie la encuentre después y crea
+-- que el sitio capta leads por ahí. Si algún día vuelve el formulario, el
+-- CREATE TABLE original sigue en el historial de git.
+--
+-- `atribucion` NO se toca: es la que sostiene el cruce campaña → venta y sigue
+-- siendo el centro de todo el plan de pauta.
+drop table if exists cotizaciones;

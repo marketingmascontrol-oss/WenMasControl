@@ -1,0 +1,162 @@
+---
+---
+
+<div id="carrito-drawer" class="fixed inset-0 z-[60] hidden">
+  <div
+    id="carrito-drawer-backdrop"
+    class="absolute inset-0 bg-slate-900/50 opacity-0 transition-opacity duration-300"
+  ></div>
+
+  <aside
+    id="carrito-drawer-panel"
+    class="absolute inset-y-0 right-0 flex w-full max-w-sm translate-x-full flex-col bg-white shadow-xl transition-transform duration-300 ease-out"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Carrito de compras"
+  >
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <h2 class="text-lg font-bold text-slate-900">Tu carrito</h2>
+      <button id="carrito-drawer-cerrar" type="button" aria-label="Cerrar carrito" class="text-slate-400 hover:text-slate-700">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4">
+      <p id="carrito-drawer-vacio" class="hidden text-sm text-slate-500">
+        Tu carrito está vacío.
+        <a href="/" class="text-brand-600 hover:text-brand-700">Ver catálogo</a>.
+      </p>
+      <div id="carrito-drawer-items" class="space-y-3"></div>
+
+      <a
+        href="/"
+        id="carrito-drawer-seguir-comprando"
+        class="mt-4 hidden w-full items-center justify-center rounded-md border border-slate-300 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-slate-400"
+      >
+        Seguir comprando
+      </a>
+
+      <div id="carrito-drawer-cruzada" class="mt-6 hidden">
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">También te puede interesar</p>
+        <div id="carrito-drawer-cruzada-items" class="grid grid-cols-2 gap-2"></div>
+      </div>
+    </div>
+
+    <div id="carrito-drawer-resumen" class="hidden border-t border-slate-200 px-5 py-4">
+      <div class="mb-3 flex items-center justify-between">
+        <span class="text-sm text-slate-500">Total</span>
+        <span id="carrito-drawer-total" class="text-lg font-bold text-slate-900"></span>
+      </div>
+      <button
+        type="button"
+        id="carrito-drawer-whatsapp"
+        class="flex w-full items-center justify-center gap-2 rounded-md bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-500"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.09c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.12.11-1.8-.11-.42-.14-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.37-.14-.2-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.26-.29.57-.36.76-.36h.55c.18 0 .42-.03.64.49.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.19-.15.31-.29.48-.15.17-.3.38-.43.51-.14.14-.29.29-.13.57.16.28.7 1.16 1.51 1.88 1.04.93 1.91 1.22 2.19 1.36.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.28.36-.23.6-.14.24.09 1.53.72 1.79.85.26.14.43.21.5.32.06.11.06.65-.18 1.33Z"/>
+        </svg>
+        Pagar por WhatsApp
+      </button>
+      <a
+        href="/carrito"
+        class="mt-2 block w-full rounded-md border border-slate-300 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-slate-400"
+      >
+        Ver carrito completo
+      </a>
+    </div>
+  </aside>
+</div>
+
+<script>
+  import { $carrito, totalPrecioCarrito, type ItemCarrito } from "../../stores/carrito";
+  import { crearFilaCarrito, crearTarjetaSugerida, type ProductoSugerido } from "../../lib/carrito-ui";
+  import { formatearPrecio } from "../../lib/formato";
+  import { construirEnlaceWhatsAppPedido } from "../../lib/whatsapp";
+  import { reportarClicWhatsApp, reportarCompra } from "../../lib/medicion";
+
+  const drawer = document.getElementById("carrito-drawer")!;
+  const backdrop = document.getElementById("carrito-drawer-backdrop")!;
+  const panel = document.getElementById("carrito-drawer-panel")!;
+  const contenedorItems = document.getElementById("carrito-drawer-items")!;
+  const vacioEl = document.getElementById("carrito-drawer-vacio")!;
+  const resumenEl = document.getElementById("carrito-drawer-resumen")!;
+  const totalEl = document.getElementById("carrito-drawer-total")!;
+  const seguirComprandoEl = document.getElementById("carrito-drawer-seguir-comprando")!;
+  const cruzadaEl = document.getElementById("carrito-drawer-cruzada")!;
+  const cruzadaItemsEl = document.getElementById("carrito-drawer-cruzada-items")!;
+
+  let ultimosSkusSugeridos = "";
+
+  async function cargarSugeridos(skusEnCarrito: string[]) {
+    const clave = skusEnCarrito.slice().sort().join(",");
+    if (clave === ultimosSkusSugeridos) return; // ya están cargadas para este mismo carrito
+    ultimosSkusSugeridos = clave;
+    try {
+      const res = await fetch(`/api/sugeridos?excluir=${encodeURIComponent(clave)}`);
+      const datos = await res.json();
+      const sugeridos: ProductoSugerido[] = datos.sugeridos ?? [];
+      cruzadaItemsEl.replaceChildren(...sugeridos.map(crearTarjetaSugerida));
+      cruzadaEl.classList.toggle("hidden", sugeridos.length === 0);
+    } catch {
+      cruzadaEl.classList.add("hidden");
+    }
+  }
+
+  function render(carrito: readonly ItemCarrito[]) {
+    contenedorItems.replaceChildren(...carrito.map(crearFilaCarrito));
+    const vacio = carrito.length === 0;
+    vacioEl.classList.toggle("hidden", !vacio);
+    resumenEl.classList.toggle("hidden", vacio);
+    seguirComprandoEl.classList.toggle("hidden", vacio);
+    seguirComprandoEl.classList.toggle("flex", !vacio);
+    totalEl.textContent = formatearPrecio(totalPrecioCarrito(carrito));
+
+    if (vacio) {
+      cruzadaEl.classList.add("hidden");
+    } else {
+      cargarSugeridos(carrito.map((i) => i.sku));
+    }
+  }
+
+  function abrir() {
+    drawer.classList.remove("hidden");
+    // Forzar reflow antes de animar para que la transición se vea.
+    void panel.offsetWidth;
+    backdrop.classList.remove("opacity-0");
+    panel.classList.remove("translate-x-full");
+    document.body.classList.add("overflow-hidden");
+  }
+
+  function cerrar() {
+    backdrop.classList.add("opacity-0");
+    panel.classList.add("translate-x-full");
+    document.body.classList.remove("overflow-hidden");
+    setTimeout(() => drawer.classList.add("hidden"), 300);
+  }
+
+  window.addEventListener("abrir-carrito", abrir);
+  backdrop.addEventListener("click", cerrar);
+  document.getElementById("carrito-drawer-cerrar")?.addEventListener("click", cerrar);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !drawer.classList.contains("hidden")) cerrar();
+  });
+
+  document.getElementById("carrito-drawer-whatsapp")?.addEventListener("click", () => {
+    const carrito = $carrito.get();
+    if (carrito.length === 0) return;
+    // 📊 La conversión que le importa a la pauta. Va acá y no en un disparador
+    // por enlace porque esto NO es un `<a href>`: un trigger de «Click URL
+    // contiene wa.me» mediría los botones secundarios y se perdería la compra.
+    reportarClicWhatsApp("carrito-drawer");
+    // 📊 Y la Compra, con el valor real del carrito. Van las dos: el Contacto
+    // mide que se abrió una conversación, la Compra mide cuánto valía. Sin la
+    // segunda, Ads no puede aprender cuánto vale en promedio un pedido.
+    reportarCompra(carrito, "carrito-drawer");
+    window.open(construirEnlaceWhatsAppPedido(carrito), "_blank", "noopener,noreferrer");
+  });
+
+  render($carrito.get());
+  $carrito.subscribe(render);
+</script>

@@ -1,0 +1,52 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { actions } from "astro:actions";
+
+const resultado = Astro.getActionResult(actions.iniciarSesion);
+if (resultado && !resultado.error) {
+  return Astro.redirect("/admin/vitrina");
+}
+---
+
+<AdminLayout titulo="Iniciar sesión" mostrarNav={false}>
+  <div class="mx-auto mt-16 max-w-sm">
+    <img src="/logo-color.svg" alt="+Control" class="mx-auto mb-3 h-12 w-auto" />
+    <h1 class="mb-6 text-center text-sm font-semibold text-acero">Panel de administración</h1>
+
+    <form method="POST" action={actions.iniciarSesion} class="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autocomplete="username"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-slate-700">Contraseña</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+
+      {resultado?.error && (
+        <p class="text-sm text-red-600">{resultado.error.message}</p>
+      )}
+
+      <button
+        type="submit"
+        class="w-full rounded-md bg-brand-500 py-2 text-sm font-semibold text-white hover:bg-brand-400"
+      >
+        Iniciar sesión
+      </button>
+    </form>
+  </div>
+</AdminLayout>

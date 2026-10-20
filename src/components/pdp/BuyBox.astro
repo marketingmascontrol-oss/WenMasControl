@@ -1,0 +1,290 @@
+---
+import type { ProductoConRelaciones } from "../../../types/product";
+import { formatearPrecio } from "../../lib/formato";
+
+interface Props {
+  producto: ProductoConRelaciones;
+}
+
+const { producto } = Astro.props;
+const enStock = producto.stock > 0;
+const imagenPrincipal = producto.imagenes.find((img) => img.es_principal) ?? producto.imagenes[0];
+---
+
+<aside
+  data-buy-box
+  data-cantidad-scope
+  data-sku={producto.sku}
+  data-nombre={producto.nombre}
+  data-precio={producto.precio}
+  data-imagen={imagenPrincipal?.url}
+  data-variantes={JSON.stringify(producto.variantes)}
+  class="h-fit rounded-lg border border-slate-200 bg-white p-5"
+>
+  <p class="text-2xl font-bold text-slate-900">{formatearPrecio(producto.precio)}</p>
+
+  {!enStock && (
+    <p class="mt-2 text-sm font-medium text-red-600">Agotado temporalmente</p>
+  )}
+
+  <div data-seccion-variantes class="mt-4" style={enStock ? "" : "display:none"}>
+    <div>
+      <p class="text-sm font-medium text-slate-700">Talla</p>
+      <div data-tallas class="mt-2 flex flex-wrap gap-2"></div>
+    </div>
+
+    <div class="mt-4">
+      <p class="text-sm font-medium text-slate-700">Color</p>
+      <div data-colores class="mt-2 flex flex-wrap gap-2"></div>
+    </div>
+
+    <p data-disponibilidad class="mt-4 text-sm font-medium text-slate-500"></p>
+
+    <div class="mt-2 flex w-32 items-center rounded-md border border-slate-300">
+      <button type="button" data-restar aria-label="Restar cantidad" class="px-3 py-2 text-lg text-slate-600 hover:text-slate-900">−</button>
+      <input
+        id="cantidad"
+        data-cantidad
+        type="number"
+        min="1"
+        value="1"
+        inputmode="numeric"
+        class="w-full border-x border-slate-300 py-2 text-center text-sm outline-none"
+      />
+      <button type="button" data-sumar aria-label="Sumar cantidad" class="px-3 py-2 text-lg text-slate-600 hover:text-slate-900">+</button>
+    </div>
+
+    <p data-mensaje-cantidad class="mt-2 hidden text-xs text-amber-700">
+      ¿Necesitas más cantidad de la disponible? <a data-link-asesor href="#" target="_blank" rel="noopener noreferrer" class="font-semibold underline">Escríbenos por WhatsApp</a>.
+    </p>
+
+    <!-- El botón se conecta al store del carrito (Nano Stores, ver BaseLayout) -->
+    <button
+      type="button"
+      data-agregar-carrito
+      disabled
+      class="mt-4 w-full rounded-md bg-brand-500 py-3 text-sm font-semibold text-white hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+    >
+      Añadir al carrito
+    </button>
+  </div>
+
+  <a
+    href="/contacto"
+    class="mt-2 block w-full rounded-md border border-slate-300 py-3 text-center text-sm font-semibold text-slate-700 hover:border-slate-400"
+  >
+    Cotizar compra por volumen
+  </a>
+
+  <dl class="mt-5 space-y-1 border-t border-slate-100 pt-4 text-xs text-slate-500">
+    <div class="flex justify-between"><dt>SKU</dt><dd>{producto.sku}</dd></div>
+    {producto.categoria && (
+      <div class="flex justify-between"><dt>Categoría</dt><dd>{producto.categoria.nombre}</dd></div>
+    )}
+  </dl>
+</aside>
+
+<script>
+  // La PDP es on-demand (consulta Supabase en cada visita), así que el precio/
+  // stock que llega en el HTML ya está fresco — solo queda cablear la
+  // selección de talla/color y el selector de cantidad.
+  import type { ProductoVariante } from "../../../types/product";
+  import { tallasDisponibles, coloresDisponibles, coloresParaTalla, buscarVariante } from "../../lib/variantes";
+  import { colorCss } from "../../lib/colores";
+  import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
+
+  const claseOpcion =
+    "rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:border-slate-400 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-300";
+  const claseOpcionActiva = "border-brand-500 bg-brand-50 text-brand-700 hover:border-brand-500";
+
+  const claseSwatch =
+    "h-9 w-9 rounded-full border-2 border-slate-300 transition hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-40";
+  const claseSwatchActiva = "border-brand-500 ring-2 ring-offset-2 ring-brand-500";
+
+  function crearBotonColor(color: string): HTMLButtonElement {
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.dataset.color = color;
+    boton.title = color;
+    boton.setAttribute("aria-label", color);
+
+    const css = colorCss(color);
+    if (css) {
+      boton.className = claseSwatch;
+      boton.style.backgroundColor = css;
+    } else {
+      boton.textContent = color;
+      boton.className = claseOpcion;
+    }
+    return boton;
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-buy-box]").forEach((buyBox) => {
+    const variantes: ProductoVariante[] = JSON.parse(buyBox.dataset.variantes || "[]");
+    const tallasEl = buyBox.querySelector<HTMLElement>("[data-tallas]");
+    const coloresEl = buyBox.querySelector<HTMLElement>("[data-colores]");
+    const disponibilidadEl = buyBox.querySelector<HTMLElement>("[data-disponibilidad]");
+    const cantidadInput = buyBox.querySelector<HTMLInputElement>("[data-cantidad]");
+    const botonAgregar = buyBox.querySelector<HTMLButtonElement>("[data-agregar-carrito]");
+    const restar = buyBox.querySelector<HTMLButtonElement>("[data-restar]");
+    const sumar = buyBox.querySelector<HTMLButtonElement>("[data-sumar]");
+    const mensajeCantidadEl = buyBox.querySelector<HTMLElement>("[data-mensaje-cantidad]");
+    const linkAsesorEl = buyBox.querySelector<HTMLAnchorElement>("[data-link-asesor]");
+    if (!tallasEl || !coloresEl || !disponibilidadEl || !cantidadInput || !botonAgregar) return;
+
+    let tallaSeleccionada: string | null = null;
+    let colorSeleccionado: string | null = null;
+
+    function clamp(valor: number): number {
+      const max = Number(cantidadInput!.max) || 1;
+      return Math.min(Math.max(valor, 1), max);
+    }
+
+    function actualizarMensajeCantidad(valorSolicitado: number) {
+      const max = Number(cantidadInput!.max) || 0;
+      if (!mensajeCantidadEl || !linkAsesorEl) return;
+      if (max > 0 && valorSolicitado > max) {
+        const partes = [`Hola, quiero pedir ${valorSolicitado} unidades de: ${buyBox.dataset.nombre} (SKU: ${buyBox.dataset.sku}`];
+        if (tallaSeleccionada) partes.push(`, Talla: ${tallaSeleccionada}`);
+        if (colorSeleccionado) partes.push(`, Color: ${colorSeleccionado}`);
+        partes.push(`). Veo que hay ${max} disponibles, ¿me ayudan a conseguir el resto?`);
+        linkAsesorEl.href = construirEnlaceWhatsAppConsulta(partes.join(""));
+        mensajeCantidadEl.classList.remove("hidden");
+      } else {
+        mensajeCantidadEl.classList.add("hidden");
+      }
+    }
+
+    function renderTallas() {
+      tallasEl!.replaceChildren(
+        ...tallasDisponibles(variantes).map((talla) => {
+          const sinStock = coloresParaTalla(variantes, talla).length === 0;
+          const boton = document.createElement("button");
+          boton.type = "button";
+          boton.textContent = talla;
+          boton.className = claseOpcion;
+          boton.disabled = sinStock;
+          boton.addEventListener("click", () => {
+            tallaSeleccionada = talla;
+            if (colorSeleccionado) {
+              const v = buscarVariante(variantes, tallaSeleccionada, colorSeleccionado);
+              if (!v || v.stock <= 0) colorSeleccionado = null;
+            }
+            actualizarEstado();
+          });
+          return boton;
+        })
+      );
+    }
+
+    // Los colores se muestran todos de entrada, no solo tras elegir talla:
+    // antes quedaban ocultos hasta el primer clic en talla, lo que parecía
+    // un selector roto para productos con varias tallas.
+    function renderColores() {
+      coloresEl!.replaceChildren(
+        ...coloresDisponibles(variantes).map((color) => {
+          const boton = crearBotonColor(color);
+          boton.addEventListener("click", () => {
+            if (boton.disabled) return;
+            colorSeleccionado = color;
+            actualizarEstado();
+          });
+          return boton;
+        })
+      );
+    }
+
+    function actualizarEstado() {
+      tallasEl!.querySelectorAll<HTMLButtonElement>("button").forEach((boton) => {
+        boton.className = `${claseOpcion} ${boton.textContent === tallaSeleccionada ? claseOpcionActiva : ""}`.trim();
+      });
+      coloresEl!.querySelectorAll<HTMLButtonElement>("button").forEach((boton) => {
+        const color = boton.dataset.color ?? "";
+        const activo = color === colorSeleccionado;
+        const sinStockParaTalla =
+          tallaSeleccionada !== null && (buscarVariante(variantes, tallaSeleccionada, color)?.stock ?? 0) <= 0;
+        boton.disabled = sinStockParaTalla;
+        const esSwatch = !!colorCss(color);
+        boton.className = esSwatch
+          ? `${claseSwatch} ${activo ? claseSwatchActiva : ""}`.trim()
+          : `${claseOpcion} ${activo ? claseOpcionActiva : ""}`.trim();
+      });
+
+      const variante =
+        tallaSeleccionada && colorSeleccionado
+          ? buscarVariante(variantes, tallaSeleccionada, colorSeleccionado)
+          : undefined;
+
+      if (variante && variante.stock > 0) {
+        disponibilidadEl!.textContent = `En stock (${variante.stock} disponibles)`;
+        cantidadInput!.max = String(variante.stock);
+        cantidadInput!.value = String(clamp(Number(cantidadInput!.value) || 1));
+        botonAgregar!.disabled = false;
+        botonAgregar!.dataset.varianteId = variante.id;
+        botonAgregar!.dataset.talla = tallaSeleccionada!;
+        botonAgregar!.dataset.color = colorSeleccionado!;
+        // 🔴 13/08/2026 — LA FICHA NO AGREGABA AL CARRITO, y el botón se veía
+        // perfectamente habilitado. El manejador delegado de `BaseLayout` exige
+        // SEIS datos EN EL BOTÓN y se va sin hacer nada si falta uno:
+        //
+        //     if (!sku || !nombre || Number.isNaN(precio) || !varianteId
+        //         || !talla || !color) return;
+        //
+        // Acá se ponían tres. Los otros tres —sku, nombre y precio— viven en el
+        // CONTENEDOR (`data-buy-box`), así que `boton.dataset.sku` era
+        // `undefined` y el `return` se comía cada clic en silencio: sin error,
+        // sin log, con el botón naranja y el stock a la vista.
+        //
+        // La vista rápida sí funcionaba porque su modal SÍ se los pone al botón
+        // (`SelectorVarianteModal`, líneas 225-227). Dos superficies con el
+        // mismo contrato y sólo una cumpliéndolo.
+        botonAgregar!.dataset.sku = buyBox.dataset.sku ?? "";
+        botonAgregar!.dataset.nombre = buyBox.dataset.nombre ?? "";
+        botonAgregar!.dataset.precio = buyBox.dataset.precio ?? "";
+        if (buyBox.dataset.imagen) botonAgregar!.dataset.imagen = buyBox.dataset.imagen;
+      } else {
+        disponibilidadEl!.textContent =
+          tallaSeleccionada && colorSeleccionado ? "Agotado en esta combinación" : "Elige talla y color";
+        botonAgregar!.disabled = true;
+        delete botonAgregar!.dataset.varianteId;
+      }
+      mensajeCantidadEl?.classList.add("hidden");
+    }
+
+    renderTallas();
+    renderColores();
+    // 🔴 13/08/2026 — EL BOTÓN «AÑADIR AL CARRITO» NO HACÍA NADA. EN TODO EL
+    // CATÁLOGO, con pauta corriendo.
+    //
+    // Acá se preseleccionaba la talla cuando había una sola… y NUNCA el color.
+    // `actualizarEstado()` sólo habilita el botón cuando están las DOS puestas,
+    // así que quedaba `disabled` diciendo «Elige talla y color» — con una sola
+    // talla y un solo color posibles, y sin nada más que el cliente pudiera
+    // elegir. Todo el catálogo de Wincol es `talla: "Única"` / `color: "Único"`:
+    // un producto = una variante. O sea que el botón estaba muerto SIEMPRE.
+    //
+    // La asimetría es todo el bug: dos selectores con la misma regla, y el
+    // atajo escrito para uno solo.
+    const tallasUnicas = tallasDisponibles(variantes);
+    if (tallasUnicas.length === 1) tallaSeleccionada = tallasUnicas[0];
+    const coloresUnicos = coloresDisponibles(variantes);
+    if (coloresUnicos.length === 1) colorSeleccionado = coloresUnicos[0];
+    actualizarEstado();
+
+    restar?.addEventListener("click", () => {
+      const solicitado = Number(cantidadInput.value) - 1;
+      actualizarMensajeCantidad(solicitado);
+      cantidadInput.value = String(clamp(solicitado));
+    });
+    sumar?.addEventListener("click", () => {
+      const solicitado = Number(cantidadInput.value) + 1;
+      actualizarMensajeCantidad(solicitado);
+      cantidadInput.value = String(clamp(solicitado));
+    });
+    cantidadInput.addEventListener("change", () => {
+      const solicitado = Number(cantidadInput.value) || 1;
+      actualizarMensajeCantidad(solicitado);
+      cantidadInput.value = String(clamp(solicitado));
+    });
+  });
+</script>

@@ -1,0 +1,263 @@
+---
+import { actions } from "astro:actions";
+import { STOCK_BAJO_UMBRAL } from "../../lib/inventario";
+import type { Categoria, ProductoImagen, ProductoVariante } from "../../../types/product";
+
+interface ProductoForm {
+  id: string;
+  sku: string;
+  nombre: string;
+  marca: string | null;
+  precio: number;
+  stock: number;
+  categoria_id: string | null;
+  descripcion_corta: string | null;
+  descripcion_larga: string | null;
+  activo: boolean;
+  en_promocion: boolean;
+}
+
+interface Props {
+  producto?: ProductoForm;
+  imagenes?: ProductoImagen[];
+  variantes?: ProductoVariante[];
+  categorias: Categoria[];
+}
+
+const { producto, imagenes = [], variantes = [], categorias } = Astro.props;
+const esEdicion = Boolean(producto);
+// max(orden)+1 en vez de imagenes.length: si se borró alguna foto en el medio,
+// length subestimaría el próximo orden y podría repetir uno ya usado.
+const proximoOrden = imagenes.reduce((max, img) => Math.max(max, img.orden + 1), 0);
+
+// Sugerencias para el campo Marca, tomadas de los logos que ya se muestran en la
+// home (public/marcas/). Es un datalist, no un select: si entra una marca nueva
+// se escribe libremente sin tener que tocar el código.
+const MARCAS_CONOCIDAS = [
+  "3M", "Air", "Croydon", "Impacto", "Insafe", "Kondor",
+  "Libus", "Linktech", "MASE", "Portwest", "Steelpro",
+];
+---
+
+<form method="POST" action={actions.guardarProducto} class="space-y-8">
+  {producto && <input type="hidden" name="id" value={producto.id} />}
+
+  <section class="rounded-lg border border-slate-200 bg-white p-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Información básica</h2>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium text-slate-700">SKU</label>
+        <input name="sku" required value={producto?.sku} class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Nombre</label>
+        <input name="nombre" required value={producto?.nombre} class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">
+          Marca <span class="font-normal text-slate-400">(3M, Croydon, Portwest…)</span>
+        </label>
+        <input name="marca" list="marcas-conocidas" value={producto?.marca ?? ""} placeholder="3M" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500" />
+        <datalist id="marcas-conocidas">
+          {MARCAS_CONOCIDAS.map((m) => <option value={m} />)}
+        </datalist>
+        <p class="mt-1 text-xs text-slate-400">
+          Obligatoria para que el producto se publique en Google Shopping y en el
+          catálogo de Meta. Si se deja vacía se envía "+Control".
+        </p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Categoría</label>
+        <select name="categoria_id" class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="">Sin categoría</option>
+          {categorias.map((c) => (
+            <option value={c.id} selected={c.id === producto?.categoria_id}>{c.nombre}</option>
+          ))}
+        </select>
+      </div>
+      <div class="flex items-center gap-2 pt-6">
+        <input id="activo" name="activo" type="checkbox" checked={producto ? producto.activo : true} class="h-4 w-4 rounded border-slate-300" />
+        <label for="activo" class="text-sm text-slate-700">Visible en la tienda</label>
+      </div>
+      <div class="flex items-center gap-2">
+        <input id="en_promocion" name="en_promocion" type="checkbox" checked={producto?.en_promocion ?? false} class="h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500" />
+        <label for="en_promocion" class="text-sm text-slate-700">En promoción <span class="text-slate-400">(aparece en /promociones y en la home)</span></label>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-slate-200 bg-white p-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Precio e inventario</h2>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Precio</label>
+        <input name="precio" type="number" min="0" step="1" required value={producto?.precio} class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500" />
+      </div>
+      <div>
+        <p class="block text-sm font-medium text-slate-700">Stock total</p>
+        <p class="mt-1 text-lg font-semibold text-slate-900">{producto?.stock ?? 0}</p>
+        <p class="mt-1 text-xs text-slate-400">
+          Se calcula sumando el stock de cada variante (talla + color) más abajo. Se avisa
+          "stock bajo" en la lista cuando queden {STOCK_BAJO_UMBRAL} unidades o menos.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-lg border border-slate-200 bg-white p-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Descripciones</h2>
+    <div class="mt-4 space-y-5">
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Descripción corta</label>
+        <p class="mb-1 text-xs text-slate-400">Se muestra al lado del precio en la ficha de producto.</p>
+        <textarea name="descripcion_corta" rows="4" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-brand-500">{producto?.descripcion_corta}</textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700">Descripción larga</label>
+        <p class="mb-1 text-xs text-slate-400">Va debajo de la ficha, con el detalle completo del producto.</p>
+        <textarea name="descripcion_larga" rows="12" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-brand-500">{producto?.descripcion_larga}</textarea>
+      </div>
+    </div>
+  </section>
+
+  <button type="submit" class="rounded-md bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
+    {esEdicion ? "Guardar cambios" : "Crear producto"}
+  </button>
+</form>
+
+{esEdicion && producto && (
+  <section class="mt-8 rounded-lg border border-slate-200 bg-white p-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Imágenes</h2>
+
+    {imagenes.length > 0 && (
+      <div class="mt-4 mb-4 flex flex-wrap gap-4">
+        {imagenes.map((img) => (
+          <div class="relative h-28 w-28 overflow-hidden rounded-md border border-slate-200 bg-white">
+            <img src={img.url} alt={img.alt ?? ""} class="h-full w-full object-contain" />
+            <form method="POST" action={actions.eliminarImagenProducto} class="absolute right-1 top-1">
+              <input type="hidden" name="id" value={img.id} />
+              <button type="submit" aria-label="Eliminar imagen" class="rounded-full bg-white/90 px-1.5 text-xs text-red-600 shadow">✕</button>
+            </form>
+          </div>
+        ))}
+      </div>
+    )}
+
+    <form method="POST" action={actions.subirImagenProducto} enctype="multipart/form-data" class="rounded-md border border-dashed border-slate-300 p-4">
+      <p class="mb-2 text-sm font-medium text-slate-700">
+        {imagenes.length > 0 ? "Agregar otra foto a la galería" : "Subir la primera foto"}
+      </p>
+      <input type="hidden" name="producto_id" value={producto.id} />
+      <input type="hidden" name="sku" value={producto.sku} />
+      <input type="hidden" name="orden" value={proximoOrden} />
+      <div class="flex flex-wrap items-center gap-3">
+        <input
+          type="file"
+          name="archivo"
+          accept="image/*"
+          required
+          class="text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-brand-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-brand-400"
+        />
+        <button type="submit" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400">
+          Subir imagen
+        </button>
+      </div>
+    </form>
+  </section>
+)}
+
+{esEdicion && producto && (
+  <section id="variantes" class="mt-8 scroll-mt-4 rounded-lg border border-slate-200 bg-white p-6">
+    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Variantes (talla y color)</h2>
+    <p class="mt-1 text-xs text-slate-400">
+      Cada combinación de talla y color tiene su propio stock. Si el producto no maneja tallas o
+      colores reales, carga una sola fila (ej. talla "Única", color "Único").
+    </p>
+
+    {variantes.length > 0 && (
+      <table class="mt-4 w-full text-left text-sm">
+        <thead class="border-b border-slate-200 text-xs uppercase text-slate-500">
+          <tr>
+            <th class="py-2 pr-4">Talla</th>
+            <th class="py-2 pr-4">Color</th>
+            <th class="py-2 pr-4">Stock</th>
+            <th class="py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {variantes.map((v) => (
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="py-2 pr-4">{v.talla}</td>
+              <td class="py-2 pr-4">{v.color}</td>
+              <td class="py-2 pr-4">
+                <form method="POST" action={actions.guardarVariante} class="flex items-center gap-2">
+                  <input type="hidden" name="id" value={v.id} />
+                  <input type="hidden" name="producto_id" value={v.producto_id} />
+                  <input type="hidden" name="talla" value={v.talla} />
+                  <input type="hidden" name="color" value={v.color} />
+                  <input
+                    name="stock"
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={v.stock}
+                    class="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                  />
+                  <button type="submit" class="text-xs font-medium text-brand-600 hover:underline">Actualizar</button>
+                </form>
+              </td>
+              <td class="py-2 text-right">
+                <form method="POST" action={actions.eliminarVariante}>
+                  <input type="hidden" name="id" value={v.id} />
+                  <button type="submit" class="text-xs text-red-600 hover:underline">Eliminar</button>
+                </form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
+    <form
+      method="POST"
+      action={actions.guardarVariante}
+      class="mt-4 flex flex-wrap items-end gap-3 rounded-md border border-dashed border-slate-300 p-4"
+    >
+      <input type="hidden" name="producto_id" value={producto.id} />
+      <div>
+        <label class="block text-xs font-medium text-slate-700">Talla</label>
+        <input
+          name="talla"
+          required
+          placeholder="Ej: M"
+          class="mt-1 w-28 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700">Color</label>
+        <input
+          name="color"
+          required
+          placeholder="Ej: Negro"
+          class="mt-1 w-28 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700">Stock</label>
+        <input
+          name="stock"
+          type="number"
+          min="0"
+          step="1"
+          required
+          value="0"
+          class="mt-1 w-24 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <button type="submit" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400">
+        Agregar variante
+      </button>
+    </form>
+  </section>
+)}

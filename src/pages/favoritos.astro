@@ -1,0 +1,82 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { SITE } from "../lib/site";
+
+const categorias = await obtenerCategorias();
+---
+
+<BaseLayout titulo="Tus favoritos" descripcion={`Productos guardados — ${SITE.descripcion}`} noindex>
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-5xl px-4 py-8">
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">Tus favoritos</h1>
+
+    <p id="favoritos-vacio" class="hidden text-sm text-slate-500">
+      Todavía no guardaste ningún producto.
+      <a href="/categorias" class="text-brand-600 hover:text-brand-700">Ver catálogo</a>.
+    </p>
+
+    <div id="favoritos-items" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>
+
+<script>
+  import { $favoritos, alternarFavorito, type ItemFavorito } from "../stores/favoritos";
+  import { formatearPrecio } from "../lib/formato";
+
+  const contenedor = document.getElementById("favoritos-items")!;
+  const vacioEl = document.getElementById("favoritos-vacio")!;
+
+  function crearTarjeta(item: ItemFavorito): HTMLElement {
+    const tarjeta = document.createElement("article");
+    tarjeta.className = "relative flex flex-col rounded-lg border border-slate-200 bg-white p-4";
+
+    const botonQuitar = document.createElement("button");
+    botonQuitar.type = "button";
+    botonQuitar.className = "absolute right-3 top-3 text-slate-400 hover:text-red-600";
+    botonQuitar.setAttribute("aria-label", "Quitar de favoritos");
+    botonQuitar.textContent = "✕";
+    botonQuitar.addEventListener("click", () => alternarFavorito(item));
+
+    const enlace = document.createElement("a");
+    enlace.href = `/productos/${item.slug}`;
+    const miniatura = document.createElement("div");
+    miniatura.className = "flex aspect-square items-center justify-center overflow-hidden rounded-md bg-white";
+    if (item.imagen) {
+      const img = document.createElement("img");
+      img.src = item.imagen;
+      img.alt = item.nombre;
+      img.className = "h-full w-full object-contain";
+      miniatura.appendChild(img);
+    }
+    enlace.appendChild(miniatura);
+
+    const nombre = document.createElement("h3");
+    nombre.className = "mt-3 line-clamp-2 text-sm font-medium text-slate-900";
+    const nombreEnlace = document.createElement("a");
+    nombreEnlace.href = `/productos/${item.slug}`;
+    nombreEnlace.className = "hover:text-brand-600";
+    nombreEnlace.textContent = item.nombre;
+    nombre.appendChild(nombreEnlace);
+
+    const precio = document.createElement("p");
+    precio.className = "mt-2 text-lg font-bold text-slate-900";
+    precio.textContent = formatearPrecio(item.precio);
+
+    tarjeta.append(botonQuitar, enlace, nombre, precio);
+    return tarjeta;
+  }
+
+  function render(favoritos: readonly ItemFavorito[]) {
+    contenedor.replaceChildren(...favoritos.map(crearTarjeta));
+    vacioEl.classList.toggle("hidden", favoritos.length > 0);
+  }
+
+  render($favoritos.get());
+  $favoritos.subscribe(render);
+</script>

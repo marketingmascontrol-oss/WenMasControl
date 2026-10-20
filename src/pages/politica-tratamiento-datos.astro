@@ -1,0 +1,110 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { SITE } from "../lib/site";
+
+const categorias = await obtenerCategorias();
+const anioActual = new Date().getFullYear();
+
+// Razón social y NIT confirmados por el cliente. El resto del contenido está
+// armado sobre la Ley 1581 de 2012 y el Decreto 1377 de 2013 (protección de
+// datos personales en Colombia) con los datos de contacto ya confirmados en
+// SITE (src/lib/site.ts). No se inventaron políticas de retención/seguridad
+// específicas más allá de lo genérico exigido por la norma. Sigue siendo
+// recomendable que un abogado revise el texto antes de darlo por definitivo.
+const razonSocial = "Workwear Industrial Colombia SAS";
+const nit = "901546480-4";
+---
+
+<BaseLayout
+  titulo="Política de tratamiento de datos personales"
+  descripcion={`Política de tratamiento de datos personales de ${SITE.nombre}, conforme a la Ley 1581 de 2012.`}
+>
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-3xl px-4 py-12">
+    <h1 class="mb-2 text-2xl font-bold text-slate-900">Política de tratamiento de datos personales</h1>
+    <p class="mb-8 text-sm text-slate-500">Última actualización: {anioActual}</p>
+
+    <div class="space-y-8 text-sm leading-relaxed text-slate-700">
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">1. Responsable del tratamiento</h2>
+        <p>
+          <strong>{razonSocial}</strong> ({SITE.nombre}), identificada con NIT {nit},
+          con domicilio en {SITE.direccion}, es responsable del tratamiento de los datos personales que los
+          usuarios de este sitio web y clientes le suministran, de conformidad con la Ley 1581 de 2012, el
+          Decreto 1377 de 2013 y las demás normas que las modifiquen o complementen.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">2. Datos que recolectamos</h2>
+        <p>Según cómo interactúes con el sitio, podemos recolectar:</p>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          <li>Datos de contacto (nombre, empresa, correo electrónico, teléfono) cuando escribes por WhatsApp, completas el formulario de contacto o el de "¿Quieres ser proveedor?".</li>
+          <li>Datos de pedido (productos, cantidades, talla, color) que se comparten con nuestro equipo comercial para coordinar la compra, el pago y el envío.</li>
+          <li>Datos técnicos básicos de navegación (por ejemplo, productos guardados en favoritos o en el carrito), que se almacenan en tu propio navegador y no se envían a nuestros servidores salvo que completes un formulario o inicies una conversación con nosotros.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">3. Finalidad del tratamiento</h2>
+        <p>Los datos personales que recolectamos se usan para:</p>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          <li>Gestionar cotizaciones, pedidos y facturación.</li>
+          <li>Brindar asesoría técnica sobre los productos.</li>
+          <li>Evaluar solicitudes de empresas interesadas en ser proveedores.</li>
+          <li>Responder consultas enviadas por WhatsApp, correo electrónico o el formulario de contacto.</li>
+          <li>Cumplir obligaciones legales y contables asociadas a la venta de bienes.</li>
+        </ul>
+        <p class="mt-2">No vendemos ni compartimos tus datos personales con terceros para fines publicitarios ajenos a {SITE.nombre}.</p>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">4. Derechos del titular</h2>
+        <p>Como titular de tus datos personales, tienes derecho a:</p>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          <li>Conocer, actualizar y rectificar tus datos personales.</li>
+          <li>Solicitar prueba de la autorización otorgada para el tratamiento de tus datos.</li>
+          <li>Ser informado sobre el uso que se le ha dado a tus datos.</li>
+          <li>Revocar la autorización y/o solicitar la supresión de tus datos, cuando no exista un deber legal o contractual que lo impida.</li>
+          <li>Presentar quejas ante la Superintendencia de Industria y Comercio por infracciones a la ley.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">5. Cómo ejercer tus derechos</h2>
+        <p>
+          Puedes solicitar acceso, actualización, rectificación o supresión de tus datos personales escribiendo a{" "}
+          <a href={`mailto:${SITE.email}`} class="font-medium text-brand-600 hover:underline">{SITE.email}</a>
+          {SITE.telefono && (
+            <>
+              {" "}o al teléfono <a href={`tel:${SITE.telefonoTel}`} class="font-medium text-brand-600 hover:underline">{SITE.telefono}</a>
+            </>
+          )}
+          . Atenderemos tu solicitud dentro de los términos establecidos por la ley.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">6. Seguridad de la información</h2>
+        <p>
+          Adoptamos medidas técnicas, humanas y administrativas razonables para proteger tus datos personales
+          contra pérdida, uso indebido, acceso no autorizado o alteración.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="mb-2 text-base font-semibold text-slate-900">7. Vigencia</h2>
+        <p>
+          Esta política rige desde su publicación y sus datos serán conservados mientras sean necesarios para las
+          finalidades descritas o mientras exista una obligación legal de conservarlos.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

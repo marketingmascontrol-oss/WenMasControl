@@ -1,0 +1,49 @@
+---
+import { construirEnlaceWhatsAppAsesor } from "../../lib/whatsapp";
+import { COOKIE_REF } from "../../lib/atribucion";
+
+// Cierre de la home: quien bajó hasta acá ya miró y todavía no escribió. Se le
+// ofrece la misma salida del hero, con el código de referencia puesto desde el
+// servidor (no depende de que cargue el JavaScript).
+const enlaceAsesor = construirEnlaceWhatsAppAsesor(
+  "Quiero cotizar la dotación de mi equipo.",
+  Astro.cookies.get(COOKIE_REF)?.value ?? null,
+);
+---
+
+<section class="relative overflow-hidden bg-brand-500 text-white">
+  <img
+    src="/simbolo-negativo.svg"
+    alt=""
+    aria-hidden="true"
+    class="pointer-events-none absolute -bottom-24 -right-16 w-80 select-none opacity-[0.12] sm:w-[28rem]"
+  />
+  <div class="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 py-16 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
+    <div class="max-w-2xl">
+      <h2 class="text-3xl font-black leading-[0.98] tracking-[-0.035em] sm:text-5xl">
+        ¿Dotación para 10 o para 500 personas?
+      </h2>
+      <p class="mt-4 text-lg text-[#AEB4C4]">
+        Envíenos la lista con cargos y tallas. Le devolvemos la cotización completa por WhatsApp.
+      </p>
+    </div>
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <a
+        href={enlaceAsesor}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-wa-origen="banda-home"
+        class="inline-flex items-center justify-center rounded-[6px] bg-white px-7 py-4 font-bold text-brand-500 transition hover:bg-tecnico"
+      >
+        Cotizar por WhatsApp
+      </a>
+      <a
+        href="/cotizar"
+        class="inline-flex items-center justify-center rounded-[6px] border border-white/25 px-6 py-4 font-semibold transition hover:border-white/60"
+      >
+        Armar solicitud
+      </a>
+    </div>
+  </div>
+  <div class="franja-plata" aria-hidden="true"></div>
+</section>

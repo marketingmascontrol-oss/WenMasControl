@@ -1,0 +1,12 @@
+# El despliegue normal es por la integración de GitHub, que solo manda lo
+# versionado. Este archivo es para que `vercel --prod` desde la terminal no
+# intente subir node_modules ni el build local: sin él el paquete supera el
+# límite de 100 MB por archivo y el deploy falla.
+node_modules
+dist
+.astro
+.vercel
+data
+supabase/.temp
+.claude
+*.log

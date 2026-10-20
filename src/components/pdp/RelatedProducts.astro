@@ -1,0 +1,23 @@
+---
+import type { ProductoConRelaciones } from "../../../types/product";
+import ProductCard from "../ui/ProductCard.astro";
+import { obtenerResumenResenasPorProductos } from "../../lib/resenas";
+
+interface Props {
+  productos: ProductoConRelaciones[];
+}
+
+const { productos } = Astro.props;
+const resumenPorProducto = await obtenerResumenResenasPorProductos(productos.map((p) => p.id));
+---
+
+{productos.length > 0 && (
+  <section class="mt-12">
+    <h2 class="mb-4 text-xl font-bold text-slate-900">Productos relacionados</h2>
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {productos.map((producto) => (
+        <ProductCard producto={producto} resumenResenas={resumenPorProducto.get(producto.id)} />
+      ))}
+    </div>
+  </section>
+)}

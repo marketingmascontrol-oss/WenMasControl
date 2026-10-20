@@ -1,0 +1,73 @@
+---
+// Listado por categoría: on-demand (el admin edita el catálogo en vivo, ver
+// Fase de panel admin) — se consulta Supabase en cada visita.
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Header from "../../components/layout/Header.astro";
+import Footer from "../../components/layout/Footer.astro";
+import ProductCard from "../../components/ui/ProductCard.astro";
+import BreadcrumbSchema from "../../components/schema/BreadcrumbSchema.astro";
+import {
+  obtenerCategorias,
+  obtenerCategoriaPorSlug,
+  obtenerProductosPorCategoria,
+} from "../../lib/productos";
+import { obtenerResumenResenasPorProductos } from "../../lib/resenas";
+import { SITE } from "../../lib/site";
+
+const { slug } = Astro.params;
+const categoria = slug ? await obtenerCategoriaPorSlug(slug) : null;
+
+if (!categoria) {
+  return Astro.rewrite("/404");
+}
+
+const [categorias, productos] = await Promise.all([
+  obtenerCategorias(),
+  obtenerProductosPorCategoria(categoria.id),
+]);
+const resumenPorProducto = await obtenerResumenResenasPorProductos(productos.map((p) => p.id));
+
+const breadcrumbItems = [
+  { nombre: "Inicio", url: SITE.url },
+  { nombre: categoria.nombre, url: new URL(`/categorias/${categoria.slug}`, SITE.url).toString() },
+];
+---
+
+<BaseLayout
+  titulo={categoria.nombre}
+  descripcion={`Catálogo de ${categoria.nombre} — ${SITE.descripcion}`}
+>
+  <Fragment slot="head">
+    <BreadcrumbSchema items={breadcrumbItems} />
+  </Fragment>
+
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-7xl px-4 py-8">
+    <nav aria-label="Breadcrumb" class="mb-4 text-sm text-slate-500">
+      <ol class="flex gap-2">
+        {breadcrumbItems.map((item, i) => (
+          <li>
+            {i > 0 && <span class="mr-2">/</span>}
+            <a href={item.url} class="hover:text-brand-600">{item.nombre}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+
+    <p class="flex items-center gap-2 text-xs font-semibold text-acero"><span class="h-[3px] w-5 bg-senal" aria-hidden="true"></span>+Control</p>
+    <h1 class="mb-6 mt-1 text-2xl font-bold text-slate-900">{categoria.nombre}</h1>
+
+    {productos.length > 0 ? (
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {productos.map((producto) => (
+          <ProductCard producto={producto} resumenResenas={resumenPorProducto.get(producto.id)} />
+        ))}
+      </div>
+    ) : (
+      <p class="text-sm text-slate-500">Aún no hay productos publicados en esta categoría.</p>
+    )}
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

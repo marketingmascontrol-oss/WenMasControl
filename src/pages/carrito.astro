@@ -1,0 +1,133 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { SITE } from "../lib/site";
+
+const categorias = await obtenerCategorias();
+---
+
+<BaseLayout
+  titulo="Carrito de compras"
+  descripcion={`Tu carrito de compras en ${SITE.nombre}`}
+  noindex
+>
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-4xl px-4 py-8">
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">Tu carrito</h1>
+
+    <p id="carrito-vacio" class="hidden text-sm text-slate-500">
+      Tu carrito está vacío.
+      <a href="/" class="text-brand-600 hover:text-brand-700">Ver catálogo</a>.
+    </p>
+
+    <div id="carrito-items" class="space-y-4"></div>
+
+    <a
+      href="/"
+      id="carrito-seguir-comprando"
+      class="mt-4 hidden w-full items-center justify-center rounded-md border border-slate-300 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-slate-400 sm:w-auto sm:px-8"
+    >
+      Seguir comprando
+    </a>
+
+    <div id="carrito-cruzada" class="mt-8 hidden">
+      <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">También te puede interesar</p>
+      <div id="carrito-cruzada-items" class="grid grid-cols-2 gap-3 sm:grid-cols-4"></div>
+    </div>
+
+    <div id="carrito-resumen" class="mt-8 hidden flex-col gap-4 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <button id="vaciar-carrito" type="button" class="text-sm font-medium text-slate-500 hover:text-red-600">
+        Vaciar carrito
+      </button>
+      <p class="text-lg font-bold text-slate-900">Total: <span id="carrito-total"></span></p>
+    </div>
+
+    <div id="carrito-whatsapp-contenedor" class="mt-4 hidden">
+      <button
+        type="button"
+        id="carrito-whatsapp"
+        class="flex w-full items-center justify-center gap-2 rounded-md bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-500 sm:w-auto sm:px-8"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+          <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.09c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.12.11-1.8-.11-.42-.14-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.37-.14-.2-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.26-.29.57-.36.76-.36h.55c.18 0 .42-.03.64.49.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.19-.15.31-.29.48-.15.17-.3.38-.43.51-.14.14-.29.29-.13.57.16.28.7 1.16 1.51 1.88 1.04.93 1.91 1.22 2.19 1.36.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.28.36-.23.6-.14.24.09 1.53.72 1.79.85.26.14.43.21.5.32.06.11.06.65-.18 1.33Z"/>
+        </svg>
+        Pagar por WhatsApp
+      </button>
+    </div>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>
+
+<script>
+  import { $carrito, vaciarCarrito, totalPrecioCarrito, type ItemCarrito } from "../stores/carrito";
+  import { crearFilaCarrito, crearTarjetaSugerida, type ProductoSugerido } from "../lib/carrito-ui";
+  import { formatearPrecio } from "../lib/formato";
+  import { construirEnlaceWhatsAppPedido } from "../lib/whatsapp";
+  import { reportarClicWhatsApp, reportarCompra } from "../lib/medicion";
+
+  const contenedorItems = document.getElementById("carrito-items")!;
+  const vacioEl = document.getElementById("carrito-vacio")!;
+  const resumenEl = document.getElementById("carrito-resumen")!;
+  const totalEl = document.getElementById("carrito-total")!;
+  const whatsappContenedor = document.getElementById("carrito-whatsapp-contenedor")!;
+  const seguirComprandoEl = document.getElementById("carrito-seguir-comprando")!;
+  const cruzadaEl = document.getElementById("carrito-cruzada")!;
+  const cruzadaItemsEl = document.getElementById("carrito-cruzada-items")!;
+
+  let ultimosSkusSugeridos = "";
+
+  async function cargarSugeridos(skusEnCarrito: string[]) {
+    const clave = skusEnCarrito.slice().sort().join(",");
+    if (clave === ultimosSkusSugeridos) return;
+    ultimosSkusSugeridos = clave;
+    try {
+      const res = await fetch(`/api/sugeridos?limite=4&excluir=${encodeURIComponent(clave)}`);
+      const datos = await res.json();
+      const sugeridos: ProductoSugerido[] = datos.sugeridos ?? [];
+      cruzadaItemsEl.replaceChildren(...sugeridos.map(crearTarjetaSugerida));
+      cruzadaEl.classList.toggle("hidden", sugeridos.length === 0);
+    } catch {
+      cruzadaEl.classList.add("hidden");
+    }
+  }
+
+  function render(carrito: readonly ItemCarrito[]) {
+    contenedorItems.replaceChildren(...carrito.map(crearFilaCarrito));
+
+    const vacio = carrito.length === 0;
+    vacioEl.classList.toggle("hidden", !vacio);
+    resumenEl.classList.toggle("hidden", vacio);
+    resumenEl.classList.toggle("flex", !vacio);
+    whatsappContenedor.classList.toggle("hidden", vacio);
+    seguirComprandoEl.classList.toggle("hidden", vacio);
+    seguirComprandoEl.classList.toggle("flex", !vacio);
+
+    totalEl.textContent = formatearPrecio(totalPrecioCarrito(carrito));
+
+    if (vacio) {
+      cruzadaEl.classList.add("hidden");
+    } else {
+      cargarSugeridos(carrito.map((i) => i.sku));
+    }
+  }
+
+  document.getElementById("vaciar-carrito")?.addEventListener("click", vaciarCarrito);
+  document.getElementById("carrito-whatsapp")?.addEventListener("click", () => {
+    const carrito = $carrito.get();
+    if (carrito.length === 0) return;
+    // 📊 Misma conversión que el drawer: es el mismo paso, en otra pantalla.
+    reportarClicWhatsApp("pagina-carrito");
+    // 📊 Misma Compra que el drawer, con el valor real del carrito. El candado
+    // de des-duplicación es el contenido del carrito, así que mandar el mismo
+    // pedido desde las dos pantallas NO cuenta dos ventas.
+    reportarCompra(carrito, "pagina-carrito");
+    window.open(construirEnlaceWhatsAppPedido(carrito), "_blank", "noopener,noreferrer");
+  });
+
+  render($carrito.get());
+  $carrito.subscribe(render);
+</script>

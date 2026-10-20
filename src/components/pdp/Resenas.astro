@@ -1,0 +1,92 @@
+---
+import { actions } from "astro:actions";
+import Estrellas from "../ui/Estrellas.astro";
+import type { Resena, ResumenResenas } from "../../../types/product";
+
+interface Props {
+  productoId: string;
+  resenas: Resena[];
+  resumen: ResumenResenas;
+}
+
+const { productoId, resenas, resumen } = Astro.props;
+
+const resultado = Astro.getActionResult(actions.crearResena);
+const enviadaOk = Boolean(resultado && !resultado.error);
+
+function formatearFecha(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" });
+}
+---
+
+<section class="mt-12 max-w-3xl" id="resenas">
+  <div class="mb-6 flex items-center gap-3">
+    <h2 class="text-xl font-bold text-slate-900">Reseñas</h2>
+    <Estrellas promedio={resumen.promedio} total={resumen.total} tamano="md" />
+  </div>
+
+  {resenas.length > 0 ? (
+    <ul class="space-y-4">
+      {resenas.map((resena) => (
+        <li class="rounded-lg border border-slate-200 p-4">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-semibold text-slate-900">{resena.autor_nombre}</p>
+            <Estrellas promedio={resena.calificacion} total={1} />
+          </div>
+          <p class="mt-1 text-xs text-slate-400">{formatearFecha(resena.created_at)}</p>
+          {resena.comentario && <p class="mt-2 text-sm text-slate-700">{resena.comentario}</p>}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="text-sm text-slate-500">Todavía no hay reseñas para este producto. ¡Sé el primero en opinar!</p>
+  )}
+
+  <div class="mt-8 rounded-lg border border-slate-200 p-5">
+    <h3 class="mb-3 text-sm font-semibold text-slate-900">Deja tu reseña</h3>
+
+    {enviadaOk && (
+      <p class="mb-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        ¡Gracias! Tu reseña quedó pendiente de aprobación y se publicará pronto.
+      </p>
+    )}
+    {resultado?.error && (
+      <p class="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{resultado.error.message}</p>
+    )}
+
+    <form method="POST" action={actions.crearResena} class="space-y-3">
+      <input type="hidden" name="producto_id" value={productoId} />
+      <div>
+        <label class="block text-xs font-medium text-slate-700">Tu nombre</label>
+        <input
+          name="autor_nombre"
+          required
+          maxlength="80"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700">Calificación</label>
+        <select name="calificacion" required class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="5">5 - Excelente</option>
+          <option value="4">4 - Muy bueno</option>
+          <option value="3">3 - Bueno</option>
+          <option value="2">2 - Regular</option>
+          <option value="1">1 - Malo</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-700">Comentario (opcional)</label>
+        <textarea
+          name="comentario"
+          rows="3"
+          maxlength="1000"
+          class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+        ></textarea>
+      </div>
+      <button type="submit" class="rounded-md bg-brand-500 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-400">
+        Enviar reseña
+      </button>
+    </form>
+  </div>
+</section>

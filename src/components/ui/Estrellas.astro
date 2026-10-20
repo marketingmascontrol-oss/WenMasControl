@@ -1,0 +1,32 @@
+---
+interface Props {
+  promedio: number;
+  total: number;
+  tamano?: "sm" | "md";
+}
+
+const { promedio, total, tamano = "sm" } = Astro.props;
+const tamanoIcono = tamano === "sm" ? 14 : 18;
+const redondeado = Math.round(promedio);
+---
+
+{total > 0 && (
+  <div class="flex items-center gap-1" title={`${promedio.toFixed(1)} de 5 (${total} reseña${total === 1 ? "" : "s"})`}>
+    <div class="flex" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          width={tamanoIcono}
+          height={tamanoIcono}
+          fill={n <= redondeado ? "#f59e0b" : "none"}
+          stroke="#f59e0b"
+          stroke-width="1.2"
+        >
+          <path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1 1 5.79L10 14.9l-5.21 2.61 1-5.79-4.21-4.1 5.82-.85L10 1.5z" />
+        </svg>
+      ))}
+    </div>
+    <span class="text-xs text-slate-500">({total})</span>
+  </div>
+)}

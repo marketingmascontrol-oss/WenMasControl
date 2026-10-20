@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Paleta del manual de identidad +Control (v1, octubre 2026).
+   «Azul que manda, rojo que señala»: mucho azul y blanco, rojo en menos del 10%
+   de cualquier pieza.
+
+   La escala `brand` es el Azul Mando. Todo el código heredado de Wincol usa
+   `brand-*` para botones, enlaces y foco, y así hereda la marca sin tocar cada
+   componente. El rojo NO entra en `brand`: vive aparte en `senal` y se usa a
+   mano, sólo como acento (precios en promoción, alertas, un detalle). Nunca
+   como fondo del logo ni formando una cruz (Ley 875 de 2004). */
+@theme {
+  --color-brand-50: #eef0f5;
+  --color-brand-100: #dce0ea;
+  --color-brand-300: #9aa3b5;
+  --color-brand-400: #2b3157; /* hover de los botones */
+  --color-brand-500: #181c37; /* Azul Mando */
+  --color-brand-600: #181c37;
+  --color-brand-700: #0e1022;
+  --color-brand-800: #090b17;
+
+  --color-senal: #de0a16; /* Rojo Señal: 5,1:1 sobre blanco, sólo textos cortos */
+  --color-senal-oscuro: #b8000f;
+  --color-acero: #5b6478;
+  --color-plata: #c7ccd6;
+  --color-tecnico: #f4f5f7; /* Blanco Técnico */
+  --color-linea: #dde0e6;
+
+  --font-sans: "Inter Tight", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-marca: 6px;
+}
+
+@layer base {
+  body {
+    color: var(--color-brand-500);
+    background: #fff;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.025em;
+  }
+}
+
+/* La franja plata: el recurso gráfico propio de la marca, sacado de la cinta
+   reflectiva de los chalecos. Va como borde inferior, nunca como relleno. */
+.franja-plata {
+  background:
+    linear-gradient(var(--color-plata), var(--color-plata)) 0 7px / 100% 8px no-repeat,
+    var(--color-brand-500);
+  height: 22px;
+}
+.borde-plata {
+  box-shadow: inset 0 -6px 0 var(--color-plata);
+}

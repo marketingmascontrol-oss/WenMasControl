@@ -1,0 +1,53 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import Hero from "../components/home/Hero.astro";
+import CategoriasMosaico from "../components/home/CategoriasMosaico.astro";
+import Respaldo from "../components/home/Respaldo.astro";
+import Marcas from "../components/home/Marcas.astro";
+import FeaturedGrid from "../components/home/FeaturedGrid.astro";
+import BandaCotizar from "../components/home/BandaCotizar.astro";
+import {
+  obtenerCategorias,
+  obtenerProductosDestacados,
+  obtenerProductosEnPromocion,
+} from "../lib/productos";
+import { SITE } from "../lib/site";
+
+// Lo que sale acá lo decide el cliente en /admin/vitrina: «Home» marca los
+// destacados y «Promo» las promociones. Sin marcas, se completa al azar.
+const [categorias, productosDestacados, promociones] = await Promise.all([
+  obtenerCategorias(),
+  obtenerProductosDestacados(8),
+  obtenerProductosEnPromocion(4),
+]);
+---
+
+<BaseLayout titulo="Dotación y EPP para empresas" descripcion={SITE.descripcion}>
+  <Header categorias={categorias} />
+
+  <main>
+    <Hero />
+    <CategoriasMosaico categorias={categorias} />
+    <Respaldo />
+    {promociones.length > 0 && (
+      <FeaturedGrid
+        productos={promociones}
+        rotulo="03 · Promociones"
+        titulo="Precios de temporada"
+        enlaceVerTodo="/promociones"
+        textoVerTodo="Ver todas las promociones →"
+      />
+    )}
+    <FeaturedGrid
+      productos={productosDestacados}
+      rotulo={promociones.length > 0 ? "04 · Destacados" : "03 · Destacados"}
+      titulo="Lo que más se pide"
+    />
+    <Marcas />
+    <BandaCotizar />
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

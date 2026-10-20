@@ -1,0 +1,46 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Header from "../../components/layout/Header.astro";
+import Footer from "../../components/layout/Footer.astro";
+import { obtenerCategorias } from "../../lib/productos";
+import { SITE } from "../../lib/site";
+
+const categorias = await obtenerCategorias();
+---
+
+<BaseLayout titulo="Catálogo EPP" descripcion={`Catálogo completo — ${SITE.descripcion}`}>
+  <Header categorias={categorias} />
+
+  <main class="mx-auto max-w-7xl px-4 py-8">
+    <h1 class="mb-6 text-2xl font-bold text-slate-900">Catálogo EPP</h1>
+
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {categorias.map((categoria) => (
+        <a
+          href={`/categorias/${categoria.slug}`}
+          class="group overflow-hidden rounded-lg border border-slate-200 bg-white hover:border-brand-500"
+        >
+          <div class="flex aspect-video items-center justify-center overflow-hidden bg-slate-100">
+            {categoria.imagen_url ? (
+              <img
+                src={categoria.imagen_url}
+                alt={categoria.nombre}
+                class="h-full w-full object-cover transition group-hover:scale-105"
+                loading="lazy"
+              />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-300">
+                <path d="M4 6h16M4 12h16M4 18h10" />
+              </svg>
+            )}
+          </div>
+          <p class="px-4 py-3 text-center text-sm font-semibold text-slate-900 group-hover:text-brand-600">
+            {categoria.nombre}
+          </p>
+        </a>
+      ))}
+    </div>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>

@@ -1,0 +1,80 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import FormularioProducto from "../../../components/admin/FormularioProducto.astro";
+import { supabaseAdmin } from "../../../lib/supabase-admin";
+import { actions } from "astro:actions";
+
+const { id } = Astro.params;
+if (!id) return Astro.rewrite("/404");
+
+const resultadoEliminarDefinitivo = Astro.getActionResult(actions.eliminarProductoDefinitivo);
+if (resultadoEliminarDefinitivo && !resultadoEliminarDefinitivo.error) {
+  return Astro.redirect("/admin");
+}
+
+const resultadoGuardar = Astro.getActionResult(actions.guardarProducto);
+const resultadoImagen = Astro.getActionResult(actions.subirImagenProducto);
+const resultadoEliminarImagen = Astro.getActionResult(actions.eliminarImagenProducto);
+const resultadoVariante = Astro.getActionResult(actions.guardarVariante);
+const resultadoEliminarVariante = Astro.getActionResult(actions.eliminarVariante);
+
+const [{ data: producto, error: errorProducto }, { data: categorias }, { data: imagenes }, { data: variantes }] =
+  await Promise.all([
+    supabaseAdmin.from("productos").select("*").eq("id", id).maybeSingle(),
+    supabaseAdmin.from("categorias").select("*").order("nombre"),
+    supabaseAdmin.from("producto_imagenes").select("*").eq("producto_id", id).order("orden"),
+    supabaseAdmin.from("producto_variantes").select("*").eq("producto_id", id).order("orden"),
+  ]);
+
+if (errorProducto || !producto) {
+  return Astro.rewrite("/404");
+}
+
+const error =
+  resultadoGuardar?.error?.message ??
+  resultadoImagen?.error?.message ??
+  resultadoEliminarImagen?.error?.message ??
+  resultadoVariante?.error?.message ??
+  resultadoEliminarVariante?.error?.message ??
+  resultadoEliminarDefinitivo?.error?.message;
+---
+
+<AdminLayout titulo={`Editar: ${producto.nombre}`}>
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-slate-900">Editar producto</h1>
+    <div class="flex items-center gap-4">
+      <form method="POST" action={actions.eliminarProducto}>
+        <input type="hidden" name="id" value={producto.id} />
+        <button type="submit" class="text-sm text-slate-500 hover:text-red-600 hover:underline">Ocultar de la tienda</button>
+      </form>
+      <form
+        method="POST"
+        action={actions.eliminarProductoDefinitivo}
+        data-form-eliminar-definitivo
+      >
+        <input type="hidden" name="id" value={producto.id} />
+        <button type="submit" class="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
+          Eliminar producto
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {error && <p class="mb-4 text-sm text-red-600">{error}</p>}
+
+  <FormularioProducto
+    producto={producto}
+    imagenes={imagenes ?? []}
+    variantes={variantes ?? []}
+    categorias={categorias ?? []}
+  />
+</AdminLayout>
+
+<script>
+  document.querySelector("[data-form-eliminar-definitivo]")?.addEventListener("submit", (e) => {
+    const ok = confirm(
+      "Esto borra el producto para siempre (incluidas sus imágenes, variantes y reseñas). No se puede deshacer. ¿Continuar?"
+    );
+    if (!ok) e.preventDefault();
+  });
+</script>

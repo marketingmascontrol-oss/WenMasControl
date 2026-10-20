@@ -1,0 +1,68 @@
+---
+import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
+import { COOKIE_REF } from "../../lib/atribucion";
+
+/**
+ * El botón flotante de WhatsApp.
+ *
+ * 🔴 PEDIDO URGENTE DEL DUEÑO, 13/08/2026: *«un botón de WhatsApp visible en
+ * móvil, donde está el 85% de mi tráfico»*. Hasta hoy, para escribirle a Wincol
+ * desde el celular había que llegar hasta el pie de página o entrar a
+ * /contacto: el 85% del tráfico tenía que buscar cómo hablar con alguien.
+ *
+ * ## Tres decisiones que no son de estilo
+ *
+ * **1. Va a la IZQUIERDA.** El widget de Arkco360 ya ocupa la esquina inferior
+ * derecha (`data-position="right"` en el layout). Dos botones flotantes en el
+ * mismo rincón se tapan entre sí, y en una pantalla de 360 px el de abajo queda
+ * inservible. La convención dice derecha; la pantalla dice que ahí ya hay algo.
+ *
+ * **2. Es un `<a href>` de verdad, no un `window.open`.** Así lo agarra el
+ * oyente delegado de `BaseLayout` y la conversión de Google Ads se reporta
+ * sola, sin una línea de código nueva. Es exactamente el error que costó una
+ * tarde del otro lado: el botón del carrito abría con `window.open` y ningún
+ * disparador por enlace lo veía.
+ *
+ * **3. El mensaje viene escrito.** Un WhatsApp que abre en blanco recibe «hola»
+ * y muere. Con el texto puesto, el bot arranca la conversación sabiendo que
+ * viene del sitio — y por `SITE.whatsapp`, que es el número que recibe los
+ * leads (desde el 01/09, la asesora humana; ver `site.ts`),
+ * no el de llamar.
+ */
+// Ya no arma la URL a mano: pasa por whatsapp.ts, que es el único lugar que
+// conoce el número correcto y que le pega el código de referencia al final.
+//
+// El código se lee acá, en el servidor, y NO se deja al parche de JavaScript
+// que reescribe los enlaces en BaseLayout: este botón es el que más se toca en
+// móvil, y si el bundle no llega a cargar el clic se iría sin medir.
+const codigoRef = Astro.cookies.get(COOKIE_REF)?.value ?? null;
+const href = construirEnlaceWhatsAppConsulta(
+  "¡Hola! Estoy en la página de +Control y quiero asesoría.",
+  codigoRef,
+);
+---
+
+<a
+  href={href}
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="Escríbenos por WhatsApp"
+  class="fixed bottom-5 left-4 z-40 flex h-14 w-14 items-center justify-center
+         rounded-full bg-[#25D366] shadow-lg shadow-black/25 transition
+         hover:scale-105 hover:bg-[#20BD5A] focus-visible:outline
+         focus-visible:outline-2 focus-visible:outline-offset-2
+         focus-visible:outline-[#25D366] motion-reduce:transition-none
+         sm:h-16 sm:w-16 sm:bottom-6 sm:left-6"
+>
+  {/* El logo oficial. Se dibuja en SVG y no como imagen para que no dependa de
+      una descarga: el botón tiene que estar ahí desde el primer pintado. */}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="#FFFFFF"
+    class="h-7 w-7 sm:h-8 sm:w-8"
+    aria-hidden="true"
+  >
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0 0 20.464 3.488" />
+  </svg>
+</a>

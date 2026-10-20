@@ -1,0 +1,27 @@
+---
+import { SITE } from "../../lib/site";
+
+const redesActivas = Object.values(SITE.redes).filter((url): url is string => Boolean(url));
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE.nombre,
+  url: SITE.url,
+  logo: new URL(SITE.logo, SITE.url).toString(),
+  ...(SITE.telefono ? { telephone: SITE.telefono } : {}),
+  ...(SITE.email ? { email: SITE.email } : {}),
+  ...(SITE.direccion
+    ? {
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: SITE.direccion,
+          addressCountry: "CO",
+        },
+      }
+    : {}),
+  ...(redesActivas.length > 0 ? { sameAs: redesActivas } : {}),
+};
+---
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(schema)} />

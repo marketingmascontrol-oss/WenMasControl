@@ -1,0 +1,477 @@
+---
+// 🪟 La vitrina: qué del catálogo muestra +Control hoy.
+//
+// El catálogo llegó entero desde Wincol y el cliente no vende todo, ni vende
+// siempre lo mismo. Esta pantalla responde una sola pregunta —¿esto se ve en el
+// sitio, sí o no?— sin entrar a editar producto por producto. Para precio,
+// fotos, descripciones o tallas sigue estando /admin (Productos).
+//
+// Cada interruptor guarda al instante (acción `cambiarVitrina`). Lo apagado
+// desaparece de TODO lo público a la vez —páginas, buscador, feeds de Google y
+// Meta, y la API que consulta Arkco360— porque la regla vive en la política de
+// lectura de la base y no en cada consulta (ver migración 20261020000000).
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { supabaseAdmin } from "../../lib/supabase-admin";
+import { formatearPrecio } from "../../lib/formato";
+
+interface FilaProducto {
+  id: string;
+  sku: string;
+  nombre: string;
+  precio: number;
+  stock: number;
+  activo: boolean;
+  en_promocion: boolean;
+  destacado: boolean;
+  categoria_id: string | null;
+  imagenes: { url: string; es_principal: boolean }[];
+}
+
+const [{ data: productos, error }, { data: categorias, error: errorCategorias }] = await Promise.all([
+  supabaseAdmin
+    .from("productos")
+    .select("id, sku, nombre, precio, stock, activo, en_promocion, destacado, categoria_id, imagenes:producto_imagenes(url, es_principal)")
+    .order("nombre"),
+  supabaseAdmin.from("categorias").select("id, nombre, slug, activa, orden").order("orden").order("nombre"),
+]);
+
+if (error) throw new Error(error.message);
+if (errorCategorias) throw new Error(errorCategorias.message);
+
+const lista = (productos ?? []) as unknown as FilaProducto[];
+const grupos = [
+  ...(categorias ?? []).map((c) => ({
+    id: c.id as string,
+    nombre: c.nombre as string,
+    slug: c.slug as string,
+    activa: c.activa as boolean,
+    productos: lista.filter((p) => p.categoria_id === c.id),
+  })),
+  { id: "", nombre: "Sin categoría", slug: "", activa: true, productos: lista.filter((p) => !p.categoria_id) },
+].filter((g) => g.id || g.productos.length > 0);
+
+const categoriasApagadas = new Set((categorias ?? []).filter((c) => !c.activa).map((c) => c.id as string));
+const visiblesEnSitio = lista.filter((p) => p.activo && !(p.categoria_id && categoriasApagadas.has(p.categoria_id))).length;
+
+const interruptores = [
+  { campo: "activo", etiqueta: "Visible" },
+  { campo: "en_promocion", etiqueta: "Promo" },
+  { campo: "destacado", etiqueta: "Home" },
+] as const;
+---
+
+<AdminLayout titulo="Vitrina" ancho="ancho">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-black tracking-[-0.03em] text-brand-500">Vitrina</h1>
+      <p class="mt-1 max-w-2xl text-sm text-acero">
+        Prenda y apague lo que se muestra. Lo que oculte acá desaparece del sitio, del buscador, de los
+        catálogos de Google y Meta, y de lo que Arkco360 le ofrece al cliente. No se borra nada.
+      </p>
+    </div>
+    <p class="rounded-[6px] border border-linea bg-white px-4 py-3 text-sm text-acero">
+      <span class="text-2xl font-black tabular-nums text-brand-500" id="contador-visibles">{visiblesEnSitio}</span>
+      de <span class="tabular-nums">{lista.length}</span> productos visibles en el sitio
+    </p>
+  </div>
+
+  {/* Barra de trabajo: filtros a la izquierda, acciones en masa a la derecha.
+      Fija arriba para que «ocultar seleccionados» no quede a 40 filas. */}
+  <div class="sticky top-0 z-20 -mx-4 mt-6 border-b border-linea bg-tecnico/95 px-4 py-3 backdrop-blur">
+    <div class="flex flex-wrap items-center gap-3">
+      <input
+        id="vitrina-buscar"
+        type="search"
+        placeholder="Buscar por nombre o referencia…"
+        class="w-full rounded-[6px] border border-linea bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500 sm:w-72"
+      />
+      <div class="flex flex-wrap gap-1 text-sm" role="group" aria-label="Filtrar">
+        {[
+          ["todos", "Todos"],
+          ["visibles", "Visibles"],
+          ["ocultos", "Ocultos"],
+          ["promo", "En promoción"],
+          ["home", "En la home"],
+          ["sinfoto", "Sin foto"],
+        ].map(([valor, texto], i) => (
+          <button
+            type="button"
+            data-filtro={valor}
+            aria-pressed={i === 0 ? "true" : "false"}
+            class="rounded-full border border-linea bg-white px-3 py-1.5 text-acero aria-pressed:border-brand-500 aria-pressed:bg-brand-500 aria-pressed:text-white"
+          >
+            {texto}
+          </button>
+        ))}
+      </div>
+
+      <div id="barra-seleccion" class="ml-auto hidden flex-wrap items-center gap-2 text-sm">
+        <span class="font-semibold text-brand-500"><span id="n-seleccionados">0</span> seleccionados</span>
+        <button type="button" data-masivo="activo:true" class="rounded-[6px] bg-brand-500 px-3 py-1.5 font-semibold text-white hover:bg-brand-400">Mostrar</button>
+        <button type="button" data-masivo="activo:false" class="rounded-[6px] border border-brand-500 bg-white px-3 py-1.5 font-semibold text-brand-500 hover:bg-tecnico">Ocultar</button>
+        <button type="button" data-masivo="en_promocion:true" class="rounded-[6px] border border-linea bg-white px-3 py-1.5 text-acero hover:text-brand-500">+ Promo</button>
+        <button type="button" data-masivo="en_promocion:false" class="rounded-[6px] border border-linea bg-white px-3 py-1.5 text-acero hover:text-brand-500">− Promo</button>
+        <button type="button" data-masivo="destacado:true" class="rounded-[6px] border border-linea bg-white px-3 py-1.5 text-acero hover:text-brand-500">+ Home</button>
+        <button type="button" data-masivo="destacado:false" class="rounded-[6px] border border-linea bg-white px-3 py-1.5 text-acero hover:text-brand-500">− Home</button>
+        <button type="button" id="limpiar-seleccion" class="px-2 py-1.5 text-acero underline underline-offset-2 hover:text-brand-500">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 space-y-5">
+    {grupos.map((grupo) => {
+      const visibles = grupo.productos.filter((p) => p.activo).length;
+      return (
+        <section
+          data-grupo={grupo.id}
+          class:list={[
+            "overflow-hidden rounded-[6px] border bg-white",
+            grupo.activa ? "border-linea" : "border-dashed border-plata",
+          ]}
+        >
+          <header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-linea bg-white px-4 py-3">
+            <label class="flex items-center gap-2" title="Seleccionar todos los de esta categoría">
+              <input type="checkbox" data-seleccionar-grupo class="h-4 w-4 accent-brand-500" />
+              <span class="sr-only">Seleccionar todos</span>
+            </label>
+            <div class="min-w-0 flex-1">
+              <h2 class="text-lg font-extrabold tracking-[-0.01em] text-brand-500">{grupo.nombre}</h2>
+              <p class="text-xs text-acero">
+                <span data-conteo-grupo>{visibles}</span> de {grupo.productos.length} visibles
+                <span data-aviso-categoria class:list={["ml-2 font-semibold text-senal", grupo.activa && "hidden"]}>
+                  · Categoría oculta: no se ve ninguno
+                </span>
+              </p>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <button type="button" data-grupo-todos="true" class="rounded-[6px] px-2.5 py-1.5 text-acero hover:bg-tecnico hover:text-brand-500">Mostrar todos</button>
+              <button type="button" data-grupo-todos="false" class="rounded-[6px] px-2.5 py-1.5 text-acero hover:bg-tecnico hover:text-brand-500">Ocultar todos</button>
+            </div>
+            {grupo.id && (
+              <div class="flex items-center gap-2 border-l border-linea pl-4">
+                <span class="text-xs font-semibold text-acero">Categoría</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={grupo.activa ? "true" : "false"}
+                  aria-label={`Categoría ${grupo.nombre} visible`}
+                  data-switch-categoria={grupo.id}
+                  class="interruptor"
+                >
+                  <span></span>
+                </button>
+              </div>
+            )}
+          </header>
+
+          {grupo.productos.length === 0 ? (
+            <p class="px-4 py-4 text-sm text-acero">Sin productos.</p>
+          ) : (
+            <ul class:list={["divide-y divide-linea", !grupo.activa && "opacity-60"]} data-lista-grupo>
+              {grupo.productos.map((p) => {
+                const foto = (p.imagenes.find((i) => i.es_principal) ?? p.imagenes[0])?.url;
+                return (
+                  <li
+                    data-fila
+                    data-id={p.id}
+                    data-busqueda={`${p.nombre} ${p.sku}`.toLowerCase()}
+                    data-activo={String(p.activo)}
+                    data-en_promocion={String(p.en_promocion)}
+                    data-destacado={String(p.destacado)}
+                    data-foto={String(Boolean(foto))}
+                    class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:flex-nowrap"
+                  >
+                    <input type="checkbox" data-seleccion class="h-4 w-4 shrink-0 accent-brand-500" aria-label={`Seleccionar ${p.nombre}`} />
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-tecnico">
+                      {foto ? (
+                        <img src={foto} alt="" class="h-full w-full object-contain mix-blend-multiply" loading="lazy" />
+                      ) : (
+                        <span class="text-[9px] text-acero">Sin foto</span>
+                      )}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-semibold text-brand-500" data-nombre>{p.nombre}</p>
+                      <p class="text-xs tabular-nums text-acero">
+                        Ref. {p.sku} · {formatearPrecio(p.precio)} · {p.stock > 0 ? `${p.stock} en stock` : "sin stock"}
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                      {interruptores.map((it) => (
+                        <label class="flex flex-col items-center gap-1">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={p[it.campo] ? "true" : "false"}
+                            aria-label={`${it.etiqueta}: ${p.nombre}`}
+                            data-switch={it.campo}
+                            class:list={["interruptor", it.campo !== "activo" && "interruptor-chico"]}
+                          >
+                            <span></span>
+                          </button>
+                          <span class="text-[10px] font-semibold uppercase tracking-wide text-acero">{it.etiqueta}</span>
+                        </label>
+                      ))}
+                      <a href={`/admin/productos/${p.id}`} class="rounded-[6px] px-2 py-1.5 text-xs font-semibold text-acero hover:bg-tecnico hover:text-brand-500">
+                        Editar
+                      </a>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      );
+    })}
+  </div>
+
+  <p id="sin-resultados" class="mt-8 hidden text-center text-sm text-acero">Nada coincide con ese filtro.</p>
+
+  <div
+    id="aviso"
+    role="status"
+    aria-live="polite"
+    class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-4 rounded-[6px] bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white opacity-0 shadow-xl transition"
+  ></div>
+</AdminLayout>
+
+<style is:global>
+  .interruptor {
+    position: relative;
+    display: inline-flex;
+    height: 1.5rem;
+    width: 2.6rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 9999px;
+    background: var(--color-plata);
+    transition: background 0.15s;
+  }
+  .interruptor span {
+    position: absolute;
+    top: 0.1875rem;
+    left: 0.1875rem;
+    height: 1.125rem;
+    width: 1.125rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s;
+  }
+  .interruptor[aria-checked="true"] {
+    background: var(--color-brand-500);
+  }
+  .interruptor[aria-checked="true"] span {
+    transform: translateX(1.1rem);
+  }
+  .interruptor-chico {
+    height: 1.25rem;
+    width: 2.2rem;
+  }
+  .interruptor-chico span {
+    height: 0.875rem;
+    width: 0.875rem;
+  }
+  .interruptor-chico[aria-checked="true"] span {
+    transform: translateX(0.95rem);
+  }
+  .interruptor:focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+  .interruptor[aria-busy="true"] {
+    opacity: 0.5;
+    cursor: progress;
+  }
+</style>
+
+<script>
+  import { actions } from "astro:actions";
+
+  type Campo = "activo" | "en_promocion" | "destacado";
+
+  const filas = [...document.querySelectorAll<HTMLElement>("[data-fila]")];
+  const aviso = document.getElementById("aviso")!;
+  const contadorVisibles = document.getElementById("contador-visibles")!;
+  let temporizadorAviso: ReturnType<typeof setTimeout> | undefined;
+
+  function avisar(texto: string, error = false) {
+    aviso.textContent = texto;
+    aviso.classList.toggle("bg-senal", error);
+    aviso.classList.toggle("bg-brand-500", !error);
+    aviso.classList.remove("opacity-0", "translate-y-4");
+    clearTimeout(temporizadorAviso);
+    temporizadorAviso = setTimeout(() => aviso.classList.add("opacity-0", "translate-y-4"), 2200);
+  }
+
+  function categoriaActiva(fila: HTMLElement): boolean {
+    const grupo = fila.closest<HTMLElement>("[data-grupo]");
+    const sw = grupo?.querySelector<HTMLElement>("[data-switch-categoria]");
+    return !sw || sw.getAttribute("aria-checked") === "true";
+  }
+
+  function pintarFila(fila: HTMLElement, campo: Campo, valor: boolean) {
+    fila.dataset[campo] = String(valor);
+    fila.querySelector(`[data-switch="${campo}"]`)?.setAttribute("aria-checked", String(valor));
+  }
+
+  function recontar() {
+    contadorVisibles.textContent = String(
+      filas.filter((f) => f.dataset.activo === "true" && categoriaActiva(f)).length,
+    );
+    document.querySelectorAll<HTMLElement>("[data-grupo]").forEach((grupo) => {
+      const enGrupo = [...grupo.querySelectorAll<HTMLElement>("[data-fila]")];
+      const el = grupo.querySelector("[data-conteo-grupo]");
+      if (el) el.textContent = String(enGrupo.filter((f) => f.dataset.activo === "true").length);
+    });
+  }
+
+  /** Guarda primero en pantalla y después en la base; si la base falla, vuelve atrás. */
+  async function aplicar(objetivo: HTMLElement[], campo: Campo, valor: boolean) {
+    const cambian = objetivo.filter((f) => f.dataset[campo] !== String(valor));
+    if (cambian.length === 0) return;
+    const antes = cambian.map((f) => f.dataset[campo] === "true");
+    cambian.forEach((f) => pintarFila(f, campo, valor));
+    recontar();
+
+    const { data, error } = await actions.cambiarVitrina({
+      ids: cambian.map((f) => f.dataset.id!),
+      campo,
+      valor,
+    });
+    if (error) {
+      cambian.forEach((f, i) => pintarFila(f, campo, antes[i]));
+      recontar();
+      avisar(`No se pudo guardar: ${error.message}`, true);
+      return;
+    }
+    const n = data.actualizados;
+    const que = {
+      activo: valor ? "visible en el sitio" : "oculto",
+      en_promocion: valor ? "en promoción" : "fuera de promoción",
+      destacado: valor ? "en la home" : "fuera de la home",
+    }[campo];
+    avisar(`Guardado · ${n} ${n === 1 ? "producto" : "productos"} ${que}`);
+  }
+
+  // Interruptores de cada fila
+  document.querySelectorAll<HTMLElement>("[data-switch]").forEach((sw) => {
+    sw.addEventListener("click", () => {
+      const fila = sw.closest<HTMLElement>("[data-fila]")!;
+      const campo = sw.dataset.switch as Campo;
+      aplicar([fila], campo, sw.getAttribute("aria-checked") !== "true");
+    });
+  });
+
+  // Mostrar / ocultar todos los de una categoría
+  document.querySelectorAll<HTMLElement>("[data-grupo-todos]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      const grupo = boton.closest<HTMLElement>("[data-grupo]")!;
+      aplicar([...grupo.querySelectorAll<HTMLElement>("[data-fila]")], "activo", boton.dataset.grupoTodos === "true");
+    });
+  });
+
+  // Interruptor de la categoría entera
+  document.querySelectorAll<HTMLElement>("[data-switch-categoria]").forEach((sw) => {
+    sw.addEventListener("click", async () => {
+      const activa = sw.getAttribute("aria-checked") !== "true";
+      const grupo = sw.closest<HTMLElement>("[data-grupo]")!;
+      const pintar = (v: boolean) => {
+        sw.setAttribute("aria-checked", String(v));
+        grupo.classList.toggle("border-dashed", !v);
+        grupo.classList.toggle("border-plata", !v);
+        grupo.classList.toggle("border-linea", v);
+        grupo.querySelector("[data-lista-grupo]")?.classList.toggle("opacity-60", !v);
+        grupo.querySelector("[data-aviso-categoria]")?.classList.toggle("hidden", v);
+        recontar();
+      };
+      pintar(activa);
+      sw.setAttribute("aria-busy", "true");
+      const { error } = await actions.cambiarCategoriaActiva({ id: sw.dataset.switchCategoria!, activa });
+      sw.removeAttribute("aria-busy");
+      if (error) {
+        pintar(!activa);
+        avisar(`No se pudo guardar: ${error.message}`, true);
+        return;
+      }
+      avisar(activa ? "Categoría visible en el sitio" : "Categoría oculta: sus productos ya no se ven");
+    });
+  });
+
+  // ── Filtros y búsqueda ──
+  const buscador = document.getElementById("vitrina-buscar") as HTMLInputElement;
+  let filtro = "todos";
+
+  function pasaFiltro(f: HTMLElement): boolean {
+    switch (filtro) {
+      case "visibles": return f.dataset.activo === "true";
+      case "ocultos": return f.dataset.activo !== "true";
+      case "promo": return f.dataset.en_promocion === "true";
+      case "home": return f.dataset.destacado === "true";
+      case "sinfoto": return f.dataset.foto !== "true";
+      default: return true;
+    }
+  }
+
+  function filtrar() {
+    const q = buscador.value.trim().toLowerCase();
+    let hay = 0;
+    filas.forEach((f) => {
+      const ok = pasaFiltro(f) && (!q || (f.dataset.busqueda ?? "").includes(q));
+      f.hidden = !ok;
+      if (ok) hay++;
+    });
+    document.querySelectorAll<HTMLElement>("[data-grupo]").forEach((g) => {
+      const algunaVisible = [...g.querySelectorAll<HTMLElement>("[data-fila]")].some((f) => !f.hidden);
+      g.hidden = !algunaVisible && (Boolean(q) || filtro !== "todos");
+    });
+    document.getElementById("sin-resultados")!.classList.toggle("hidden", hay > 0);
+  }
+
+  buscador.addEventListener("input", filtrar);
+  document.querySelectorAll<HTMLElement>("[data-filtro]").forEach((b) => {
+    b.addEventListener("click", () => {
+      filtro = b.dataset.filtro!;
+      document.querySelectorAll("[data-filtro]").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+      filtrar();
+    });
+  });
+
+  // ── Selección múltiple ──
+  const barra = document.getElementById("barra-seleccion")!;
+  const nSeleccionados = document.getElementById("n-seleccionados")!;
+  const seleccionadas = () => filas.filter((f) => f.querySelector<HTMLInputElement>("[data-seleccion]")!.checked);
+
+  function actualizarBarra() {
+    const n = seleccionadas().length;
+    nSeleccionados.textContent = String(n);
+    barra.classList.toggle("hidden", n === 0);
+    barra.classList.toggle("flex", n > 0);
+  }
+
+  document.querySelectorAll<HTMLInputElement>("[data-seleccion]").forEach((c) => c.addEventListener("change", actualizarBarra));
+  document.querySelectorAll<HTMLInputElement>("[data-seleccionar-grupo]").forEach((c) => {
+    c.addEventListener("change", () => {
+      // Sólo las filas a la vista: seleccionar «todos» con un filtro puesto
+      // no puede arrastrar productos que el admin no está viendo.
+      c.closest("[data-grupo]")!
+        .querySelectorAll<HTMLElement>("[data-fila]")
+        .forEach((f) => {
+          if (!f.hidden) f.querySelector<HTMLInputElement>("[data-seleccion]")!.checked = c.checked;
+        });
+      actualizarBarra();
+    });
+  });
+
+  document.getElementById("limpiar-seleccion")!.addEventListener("click", () => {
+    document.querySelectorAll<HTMLInputElement>("[data-seleccion], [data-seleccionar-grupo]").forEach((c) => (c.checked = false));
+    actualizarBarra();
+  });
+
+  document.querySelectorAll<HTMLElement>("[data-masivo]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const [campo, valor] = b.dataset.masivo!.split(":");
+      await aplicar(seleccionadas(), campo as Campo, valor === "true");
+    });
+  });
+</script>

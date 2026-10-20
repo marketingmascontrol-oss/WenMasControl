@@ -1,0 +1,64 @@
+---
+import type { ProductoImagen } from "../../../types/product";
+
+interface Props {
+  imagenes: ProductoImagen[];
+  nombre: string;
+}
+
+const { imagenes, nombre } = Astro.props;
+const ordenadas = [...imagenes].sort((a, b) => a.orden - b.orden);
+const principal = ordenadas[0];
+---
+
+<div data-galeria class="flex flex-col-reverse gap-3 sm:flex-row">
+  {ordenadas.length > 1 && (
+    <ul class="flex gap-2 sm:flex-col">
+      {ordenadas.map((img, i) => (
+        <li>
+          <button
+            type="button"
+            data-miniatura
+            data-src={img.url}
+            data-alt={img.alt ?? nombre}
+            aria-label={`Ver imagen ${i + 1} de ${nombre}`}
+            class="h-16 w-16 overflow-hidden rounded-md border border-slate-200 bg-white p-1 hover:border-brand-500 aria-current:border-brand-500"
+            aria-current={i === 0 ? "true" : "false"}
+          >
+            <img src={img.url} alt="" loading="lazy" class="h-full w-full object-contain" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  )}
+
+  <div class="flex aspect-square flex-1 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+    {principal ? (
+      <img
+        data-imagen-principal
+        src={principal.url}
+        alt={principal.alt ?? nombre}
+        class="h-full w-full object-contain"
+      />
+    ) : (
+      <div class="text-sm text-slate-400">Sin imagen disponible</div>
+    )}
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-galeria]").forEach((galeria) => {
+    const imagenPrincipal = galeria.querySelector<HTMLImageElement>("[data-imagen-principal]");
+    const miniaturas = galeria.querySelectorAll<HTMLButtonElement>("[data-miniatura]");
+
+    miniaturas.forEach((miniatura) => {
+      miniatura.addEventListener("click", () => {
+        if (!imagenPrincipal) return;
+        imagenPrincipal.src = miniatura.dataset.src ?? imagenPrincipal.src;
+        imagenPrincipal.alt = miniatura.dataset.alt ?? imagenPrincipal.alt;
+        miniaturas.forEach((m) => m.setAttribute("aria-current", "false"));
+        miniatura.setAttribute("aria-current", "true");
+      });
+    });
+  });
+</script>
