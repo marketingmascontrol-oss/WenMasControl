@@ -6,7 +6,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Header from "../../components/layout/Header.astro";
 import Footer from "../../components/layout/Footer.astro";
 import Gallery from "../../components/pdp/Gallery.astro";
-import BuyBox from "../../components/pdp/BuyBox.astro";
+import PedidoPorTallas from "../../components/pdp/PedidoPorTallas.astro";
 import RelatedProducts from "../../components/pdp/RelatedProducts.astro";
 import Resenas from "../../components/pdp/Resenas.astro";
 import Estrellas from "../../components/ui/Estrellas.astro";
@@ -19,6 +19,7 @@ import {
 } from "../../lib/productos";
 import { obtenerResenasAprobadas, obtenerResumenResenas } from "../../lib/resenas";
 import { SITE } from "../../lib/site";
+import { leerFicha, marcaDe } from "../../lib/ficha";
 
 const { slug } = Astro.params;
 const producto = slug ? await obtenerProductoPorSlug(slug) : null;
@@ -35,6 +36,13 @@ const [categorias, productosDeLaCategoria, resenas, resumenResenas] = await Prom
 ]);
 
 const relacionados = productosDeLaCategoria.filter((p) => p.id !== producto.id).slice(0, 4);
+
+// La descripción corta casi siempre es una ficha «Etiqueta: valor» (ver
+// lib/ficha.ts): se muestra como tabla, y la marca sube al encabezado.
+const ficha = leerFicha(producto.descripcion_corta);
+const marca = marcaDe(producto);
+const datosFicha = ficha.datos.filter((d) => !/^marca$/i.test(d.etiqueta));
+
 
 // item_id tiene que ser el SKU: el mismo valor que lleva `g:id` en los feeds
 // (src/lib/feed.ts). Si el píxel manda el UUID de Supabase, Meta no empareja la
@@ -70,54 +78,124 @@ const breadcrumbItems = [
 
   <Header categorias={categorias} />
 
-  <main class="mx-auto max-w-7xl px-4 py-8">
-    <nav aria-label="Breadcrumb" class="mb-4 text-sm text-slate-500">
-      <ol class="flex gap-2">
-        {breadcrumbItems.map((item, i) => (
-          <li>
-            {i > 0 && <span class="mr-2">/</span>}
-            <a href={item.url} class="hover:text-brand-600">{item.nombre}</a>
-          </li>
-        ))}
-      </ol>
-    </nav>
+  <main>
+    {/* Encabezado de la ficha: en Azul Mando, a todo el ancho. Wincol abre la
+        ficha con tres columnas sobre blanco; acá el nombre, la referencia y la
+        marca se leen primero, como en la portada de una ficha técnica. */}
+    <section class="bg-brand-500 text-white">
+      <div class="mx-auto max-w-7xl px-4 pb-8 pt-6 sm:pb-10">
+        <nav aria-label="Breadcrumb" class="text-[13px] text-[#AEB4C4]">
+          <ol class="flex flex-wrap gap-x-2">
+            {breadcrumbItems.slice(0, -1).map((item, i) => (
+              <li>
+                {i > 0 && <span class="mr-2 opacity-60">/</span>}
+                <a href={item.url} class="hover:text-white">{item.nombre}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+        <div class="mt-6 flex flex-wrap items-center gap-2 text-[12px] font-semibold">
+          <span class="rounded-[4px] bg-white/10 px-2 py-1 tabular-nums">Ref. {producto.sku}</span>
+          {marca && <span class="rounded-[4px] bg-white/10 px-2 py-1">Marca {marca}</span>}
+          {producto.en_promocion && <span class="rounded-[4px] bg-white px-2 py-1 font-bold uppercase tracking-wide text-senal">Promoción</span>}
+        </div>
+        <h1 class="mt-3 max-w-4xl text-3xl font-black leading-[1.02] tracking-[-0.035em] sm:text-5xl">
+          {producto.nombre}
+        </h1>
+        {resumenResenas.total > 0 && (
+          <a href="#resenas" class="mt-3 inline-block hover:opacity-80">
+            <Estrellas promedio={resumenResenas.promedio} total={resumenResenas.total} tamano="md" />
+          </a>
+        )}
+      </div>
+      <div class="franja-plata" aria-hidden="true"></div>
+    </section>
 
-    <article itemscope itemtype="https://schema.org/Product" class="grid gap-8 lg:grid-cols-12">
-      <div class="lg:col-span-5">
+    <article itemscope itemtype="https://schema.org/Product" class="mx-auto grid max-w-7xl gap-10 px-4 py-10 lg:grid-cols-12 lg:gap-12">
+      <meta itemprop="name" content={producto.nombre} />
+      <meta itemprop="sku" content={producto.sku} />
+      {/* En el celular el orden es foto → pedido → ficha: la caja de compra no
+          puede quedar debajo de toda la ficha técnica. En escritorio el pedido
+          ocupa la columna derecha, a lo alto de las dos filas, y se pega. */}
+      <div class="lg:col-span-7">
         <Gallery imagenes={producto.imagenes} nombre={producto.nombre} />
       </div>
 
-      <div class="lg:col-span-4">
-        <p class="flex items-center gap-2 text-xs font-semibold text-acero"><span class="h-[3px] w-5 bg-senal" aria-hidden="true"></span>+Control</p>
-        <p class="mt-1 text-sm text-slate-500">SKU: <span itemprop="sku">{producto.sku}</span></p>
-        <h1 itemprop="name" class="mt-1 text-2xl font-bold text-slate-900">{producto.nombre}</h1>
-        <div class="mt-2">
-          <a href="#resenas" class="inline-block hover:opacity-80">
-            <Estrellas promedio={resumenResenas.promedio} total={resumenResenas.total} tamano="md" />
-          </a>
-        </div>
-        {producto.descripcion_corta && (
-          <p itemprop="description" class="mt-3 text-slate-600">{producto.descripcion_corta}</p>
-        )}
+      <div class="lg:sticky lg:top-[calc(var(--alto-header,120px)+1.5rem)] lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1 lg:self-start">
+        <PedidoPorTallas producto={producto} />
       </div>
 
-      <div class="lg:sticky lg:top-[152px] lg:col-span-3 lg:self-start">
-        <BuyBox producto={producto} />
+      <div class="space-y-12 lg:col-span-7">
+
+        {datosFicha.length > 0 && (
+          <section>
+            <div class="flex items-baseline justify-between border-b-[3px] border-brand-500 pb-2">
+              <h2 class="text-xl font-black tracking-[-0.02em] text-brand-500">Ficha técnica</h2>
+              <span class="text-[12px] font-semibold tabular-nums text-acero">Ref. {producto.sku}</span>
+            </div>
+            <dl class="divide-y divide-linea">
+              {marca && (
+                <div class="grid gap-1 py-3 sm:grid-cols-[180px_1fr] sm:gap-6">
+                  <dt class="text-[13px] font-semibold text-acero">Marca</dt>
+                  <dd class="text-[15px] font-bold text-brand-500">{marca}</dd>
+                </div>
+              )}
+              {datosFicha.map((d) => (
+                <div class="grid gap-1 py-3 sm:grid-cols-[180px_1fr] sm:gap-6">
+                  <dt class="text-[13px] font-semibold text-acero">{d.etiqueta}</dt>
+                  <dd class="text-[15px] text-brand-500">{d.valor}</dd>
+                </div>
+              ))}
+              {producto.categoria && (
+                <div class="grid gap-1 py-3 sm:grid-cols-[180px_1fr] sm:gap-6">
+                  <dt class="text-[13px] font-semibold text-acero">Categoría</dt>
+                  <dd class="text-[15px] text-brand-500"><a href={`/categorias/${producto.categoria.slug}`} class="underline-offset-4 hover:underline">{producto.categoria.nombre}</a></dd>
+                </div>
+              )}
+            </dl>
+          </section>
+        )}
+
+        {(producto.descripcion_larga || (datosFicha.length === 0 && producto.descripcion_corta) || ficha.resto) && (
+          <section itemprop="description">
+            <h2 class="border-b-[3px] border-brand-500 pb-2 text-xl font-black tracking-[-0.02em] text-brand-500">Para qué sirve</h2>
+            {datosFicha.length === 0 && producto.descripcion_corta && (
+              <p class="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-acero">{producto.descripcion_corta}</p>
+            )}
+            {ficha.resto && datosFicha.length > 0 && (
+              <p class="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-acero">{ficha.resto}</p>
+            )}
+            {producto.descripcion_larga && (
+              <p class="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-acero">{producto.descripcion_larga}</p>
+            )}
+          </section>
+        )}
+
+        <section>
+          <h2 class="border-b-[3px] border-brand-500 pb-2 text-xl font-black tracking-[-0.02em] text-brand-500">Así compra en +Control</h2>
+          <ol class="mt-4 grid gap-4 sm:grid-cols-3">
+            {[
+              ["01", "Arme el pedido", "Tallas y cantidades en la misma ficha, varios productos en un solo pedido."],
+              ["02", "Lo envía por WhatsApp", "Le confirmamos stock, precio por volumen y fecha de entrega."],
+              ["03", "Recibe con factura", "Factura electrónica a nombre de su empresa. Despachos a todo el país."],
+            ].map(([n, t, d]) => (
+              <li class="rounded-[6px] bg-tecnico p-4">
+                <span class="text-[12px] font-bold tabular-nums text-acero">{n}</span>
+                <p class="mt-1 font-extrabold text-brand-500">{t}</p>
+                <p class="mt-1 text-[13px] text-acero">{d}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
       </div>
     </article>
 
-    {producto.descripcion_larga && (
-      <section class="mt-10 max-w-3xl">
-        <h2 class="mb-3 text-xl font-bold text-slate-900">Descripción</h2>
-        <p class="whitespace-pre-line text-slate-700">{producto.descripcion_larga}</p>
-      </section>
-    )}
-
     <div hidden data-producto-capa-datos={datosCapa}></div>
 
-    <Resenas productoId={producto.id} resenas={resenas} resumen={resumenResenas} />
-
-    <RelatedProducts productos={relacionados} />
+    <div class="mx-auto max-w-7xl px-4 pb-16">
+      <Resenas productoId={producto.id} resenas={resenas} resumen={resumenResenas} />
+      <RelatedProducts productos={relacionados} />
+    </div>
   </main>
 
   <Footer categorias={categorias} />

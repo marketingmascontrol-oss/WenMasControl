@@ -1,0 +1,223 @@
+---
+import type { ProductoConRelaciones } from "../../../types/product";
+import { formatearPrecio } from "../../lib/formato";
+import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
+import { COOKIE_REF } from "../../lib/atribucion";
+
+interface Props {
+  producto: ProductoConRelaciones;
+}
+
+// Pedido por tallas: el comprador de dotación no compra «una bota talla 40»,
+// compra 6 de la 38, 10 de la 40 y 4 de la 42 para la cuadrilla. Wincol le
+// hace elegir talla → color → cantidad → agregar, una vez por talla; acá ve
+// todas las combinaciones con su stock y escribe las cantidades de una.
+// Cada fila es una variante (talla + color); el producto de talla única queda
+// en una sola fila «Unidades».
+const { producto } = Astro.props;
+const imagenPrincipal = producto.imagenes.find((img) => img.es_principal) ?? producto.imagenes[0];
+const variantes = [...producto.variantes].sort((a, b) => a.orden - b.orden);
+const conStock = variantes.filter((v) => v.stock > 0);
+const variosColores = new Set(variantes.map((v) => v.color)).size > 1;
+const unica = variantes.length === 1;
+
+function rotulo(talla: string, color: string): string {
+  const t = /^[uú]nica$/i.test(talla) ? "" : talla;
+  const c = variosColores && !/^[uú]nico$/i.test(color) ? color : "";
+  return [t, c].filter(Boolean).join(" · ") || "Unidades";
+}
+
+// La puerta a WhatsApp se arma en el servidor con el código de la visita: no
+// puede depender de que cargue el JS (ver CLAUDE.md de Wincol, «las cinco puertas»).
+const codigo = Astro.cookies.get(COOKIE_REF)?.value ?? null;
+const enlaceVolumen = construirEnlaceWhatsAppConsulta(
+  `Hola, quiero cotizar por volumen: ${producto.nombre} (Ref. ${producto.sku}). Necesito estas tallas y cantidades: `,
+  codigo,
+);
+const enlaceDisponibilidad = construirEnlaceWhatsAppConsulta(
+  `Hola, quiero consultar disponibilidad de: ${producto.nombre} (Ref. ${producto.sku}).`,
+  codigo,
+);
+---
+
+<section
+  data-pedido-tallas
+  data-sku={producto.sku}
+  data-nombre={producto.nombre}
+  data-precio={producto.precio}
+  data-imagen={imagenPrincipal?.url}
+  class="overflow-hidden rounded-[6px] border border-linea bg-white"
+>
+  <header class="flex items-end justify-between gap-4 border-b border-linea px-5 py-4">
+    <div>
+      <p class="text-[12px] font-semibold text-acero">Precio unidad</p>
+      <p class="text-3xl font-black tabular-nums tracking-[-0.03em] text-brand-500">{formatearPrecio(producto.precio)}</p>
+    </div>
+    {producto.stock > 0 ? (
+      <p class="flex items-center gap-1.5 text-xs font-semibold text-acero">
+        <span class="h-1.5 w-1.5 rounded-full bg-[#1FAF55]" aria-hidden="true"></span>
+        {producto.stock} en bodega
+      </p>
+    ) : (
+      <p class="text-xs font-semibold text-acero">Bajo pedido</p>
+    )}
+  </header>
+
+  {conStock.length > 0 ? (
+    <>
+      <div class="px-5 pt-4">
+        <p class="text-sm font-extrabold text-brand-500">{unica ? "¿Cuántas unidades?" : "Arme el pedido por tallas"}</p>
+        {!unica && <p class="mt-0.5 text-xs text-acero">Escriba la cantidad de cada talla. Las agotadas se cotizan por WhatsApp.</p>}
+      </div>
+
+      <ul class="mt-3 max-h-[22rem] divide-y divide-linea overflow-y-auto border-y border-linea">
+        {variantes.map((v) => (
+          <li
+            data-fila
+            data-variante-id={v.id}
+            data-talla={v.talla}
+            data-color={v.color}
+            data-stock={v.stock}
+            class:list={["flex items-center gap-3 px-5 py-2.5", v.stock <= 0 && "bg-tecnico/60"]}
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block text-[15px] font-bold tabular-nums text-brand-500">{rotulo(v.talla, v.color)}</span>
+              <span class="block text-[11px] text-acero">{v.stock > 0 ? `${v.stock} disp.` : "Agotada"}</span>
+            </span>
+            {v.stock > 0 ? (
+              <span class="flex items-center rounded-[6px] border border-linea">
+                <button type="button" data-menos aria-label={`Una menos de ${rotulo(v.talla, v.color)}`} class="h-9 w-9 text-lg text-acero hover:text-brand-500">−</button>
+                <input
+                  data-cant
+                  type="number"
+                  min="0"
+                  max={v.stock}
+                  value={unica ? 1 : 0}
+                  inputmode="numeric"
+                  aria-label={`Cantidad ${rotulo(v.talla, v.color)}`}
+                  class="h-9 w-12 border-x border-linea text-center text-sm font-bold tabular-nums text-brand-500 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <button type="button" data-mas aria-label={`Una más de ${rotulo(v.talla, v.color)}`} class="h-9 w-9 text-lg text-acero hover:text-brand-500">+</button>
+              </span>
+            ) : (
+              <span class="text-xs text-acero">—</span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <p data-aviso-tope class="hidden bg-tecnico px-5 py-2 text-xs text-brand-500">
+        Llegó al stock de esa talla. ¿Necesita más? <a href={enlaceVolumen} target="_blank" rel="noopener noreferrer" data-wa-origen="ficha-tope" class="font-bold underline">Lo conseguimos por WhatsApp</a>.
+      </p>
+
+      <div class="px-5 py-4">
+        <div class="flex items-baseline justify-between text-sm">
+          <span class="text-acero"><span data-total-unidades class="font-bold text-brand-500">0</span> unidades</span>
+          <span data-total-valor class="text-lg font-black tabular-nums text-brand-500">$ 0</span>
+        </div>
+        <button
+          type="button"
+          data-agregar-pedido
+          disabled
+          class="mt-3 w-full rounded-[6px] bg-brand-500 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:bg-linea disabled:text-acero"
+        >
+          Agregar al pedido
+        </button>
+      </div>
+    </>
+  ) : (
+    <div class="px-5 py-5">
+      <p class="text-sm text-acero">Este producto se consigue bajo pedido. Escríbanos y le confirmamos tiempos y tallas.</p>
+      <a href={enlaceDisponibilidad} target="_blank" rel="noopener noreferrer" data-wa-origen="ficha-disponibilidad" class="mt-3 flex w-full items-center justify-center rounded-[6px] bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-400">
+        Consultar disponibilidad
+      </a>
+    </div>
+  )}
+
+  <a
+    href={enlaceVolumen}
+    target="_blank"
+    rel="noopener noreferrer"
+    data-wa-origen="ficha-volumen"
+    class="flex items-center justify-between gap-3 border-t border-linea bg-tecnico px-5 py-3.5 text-sm font-bold text-brand-500 transition hover:bg-brand-500 hover:text-white"
+  >
+    <span>¿Pedido grande? Cotice precio por volumen</span>
+    <span aria-hidden="true">→</span>
+  </a>
+</section>
+
+<script>
+  import { agregarYMedir } from "../../lib/agregar-medido";
+  import { formatearPrecio } from "../../lib/formato";
+
+  document.querySelectorAll<HTMLElement>("[data-pedido-tallas]").forEach((caja) => {
+    const precio = Number(caja.dataset.precio);
+    const filas = [...caja.querySelectorAll<HTMLElement>("[data-fila]")].filter((f) => f.querySelector("[data-cant]"));
+    const boton = caja.querySelector<HTMLButtonElement>("[data-agregar-pedido]");
+    const totalUnidades = caja.querySelector<HTMLElement>("[data-total-unidades]");
+    const totalValor = caja.querySelector<HTMLElement>("[data-total-valor]");
+    const avisoTope = caja.querySelector<HTMLElement>("[data-aviso-tope]");
+    if (!boton || Number.isNaN(precio)) return;
+
+    const inputDe = (fila: HTMLElement) => fila.querySelector<HTMLInputElement>("[data-cant]")!;
+
+    function fijar(fila: HTMLElement, pedido: number) {
+      const tope = Number(fila.dataset.stock) || 0;
+      const valor = Math.max(0, Math.min(Math.floor(pedido) || 0, tope));
+      inputDe(fila).value = String(valor);
+      if (pedido > tope) avisoTope?.classList.remove("hidden");
+      recalcular();
+    }
+
+    function recalcular() {
+      const unidades = filas.reduce((n, f) => n + (Number(inputDe(f).value) || 0), 0);
+      totalUnidades!.textContent = String(unidades);
+      totalValor!.textContent = formatearPrecio(unidades * precio);
+      boton!.disabled = unidades === 0;
+      boton!.textContent = unidades > 0 ? `Agregar ${unidades} ${unidades === 1 ? "unidad" : "unidades"} al pedido` : "Agregar al pedido";
+      filas.forEach((f) => f.classList.toggle("bg-brand-50", Number(inputDe(f).value) > 0));
+    }
+
+    filas.forEach((fila) => {
+      const input = inputDe(fila);
+      fila.querySelector("[data-menos]")?.addEventListener("click", () => fijar(fila, Number(input.value) - 1));
+      fila.querySelector("[data-mas]")?.addEventListener("click", () => fijar(fila, Number(input.value) + 1));
+      input.addEventListener("input", () => recalcular());
+      input.addEventListener("change", () => fijar(fila, Number(input.value)));
+    });
+
+    boton.addEventListener("click", () => {
+      const sku = caja.dataset.sku ?? "";
+      const nombre = caja.dataset.nombre ?? "";
+      let agregadas = 0;
+      filas.forEach((fila) => {
+        const cantidad = Number(inputDe(fila).value) || 0;
+        if (cantidad <= 0) return;
+        agregarYMedir(
+          {
+            varianteId: fila.dataset.varianteId!,
+            sku,
+            nombre,
+            precio,
+            imagen: caja.dataset.imagen,
+            talla: fila.dataset.talla!,
+            color: fila.dataset.color!,
+          },
+          cantidad,
+          "pedido-tallas",
+        );
+        agregadas += cantidad;
+      });
+      if (agregadas === 0) return;
+      window.dispatchEvent(new CustomEvent("abrir-carrito"));
+      // Una sola fila (talla única) queda en 1 para el próximo; con varias
+      // tallas se limpia todo, como un formulario ya enviado.
+      filas.forEach((f) => (inputDe(f).value = filas.length === 1 ? "1" : "0"));
+      avisoTope?.classList.add("hidden");
+      recalcular();
+      boton.textContent = "Agregado al pedido ✓";
+    });
+
+    recalcular();
+  });
+</script>

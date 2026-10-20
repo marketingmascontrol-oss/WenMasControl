@@ -15,7 +15,7 @@ const rutaActual = Astro.url.pathname;
     plata como borde inferior (manual, «Aplicaciones»). Las categorías van a la
     vista en una fila y no escondidas en un menú: en EPP el comprador llega
     pensando en una parte del cuerpo —manos, cabeza, pies— y la tiene que ver. */}
-<header class="sticky top-0 z-50">
+<header data-header class="sticky top-0 z-50">
   <div class="bg-brand-500 text-white">
     <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:flex-nowrap">
       <a href="/" class="shrink-0" aria-label={`${SITE.nombre}, inicio`}>
@@ -150,6 +150,16 @@ const rutaActual = Astro.url.pathname;
 </header>
 
 <script>
+  // El alto del encabezado cambia con el ancho (el buscador baja de renglón en
+  // el celular). Lo que se pega debajo —la barra de filtros de la categoría, la
+  // caja de pedido de la ficha— lo lee de --alto-header en vez de adivinarlo.
+  const cabecera = document.querySelector<HTMLElement>("[data-header]");
+  if (cabecera) {
+    new ResizeObserver(() =>
+      document.documentElement.style.setProperty("--alto-header", `${cabecera.offsetHeight}px`)
+    ).observe(cabecera);
+  }
+
   import { buscar } from "../../lib/buscador-arkco";
   import { formatearPrecio } from "../../lib/formato";
 

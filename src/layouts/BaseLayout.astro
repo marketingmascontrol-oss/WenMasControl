@@ -244,9 +244,7 @@ const { gtm, googleAds } = SITE.medicion;
         type ItemCarrito,
       } from "../stores/carrito";
       import { $favoritos, alternarFavorito, esFavorito } from "../stores/favoritos";
-      import { reportarAgregadoAlCarrito } from "../lib/medicion";
-      import { EVENTOS as EV_CAPA, empujar } from "../lib/capa-datos";
-      import { agregarAlCarrito as agregarMeta } from "../lib/meta";
+      import { agregarYMedir } from "../lib/agregar-medido";
 
       function actualizarBadge(carrito: readonly ItemCarrito[]) {
         const badge = document.getElementById("contador-carrito");
@@ -349,21 +347,14 @@ const { gtm, googleAds } = SITE.medicion;
           cantidad = Number(input?.value) || 1;
         }
 
-        agregarAlCarrito(
+        // 📊 agregarYMedir es la única puerta al carrito: agrega y reporta la
+        // señal de intención a la vez. El pedido por tallas de la ficha entra
+        // por la misma función.
+        agregarYMedir(
           { varianteId, sku, nombre, precio, imagen: boton.dataset.imagen, talla, color },
-          cantidad
+          cantidad,
+          "boton-agregar"
         );
-        // 📊 Señal temprana de intención de compra. Va acá, en el oyente
-        // delegado, porque este es el ÚNICO camino por el que entra algo al
-        // carrito en todo el catálogo — ficha, vista previa y modal de
-        // variante pasan todos por acá. Un disparador por selector de botón
-        // se perdería alguno de los tres.
-        reportarAgregadoAlCarrito({ sku, precio, cantidad }, "boton-agregar");
-        empujar(EV_CAPA.agregarCarrito, {
-          value: precio * cantidad,
-          items: [{ item_id: sku, item_name: nombre, price: precio, quantity: cantidad }],
-        });
-        agregarMeta({ sku, precio, cantidad });
         window.dispatchEvent(new CustomEvent("abrir-carrito"));
 
         const textoOriginal = boton.textContent;

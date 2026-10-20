@@ -4,6 +4,7 @@ import { formatearPrecio } from "../../lib/formato";
 import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
 import { COOKIE_REF } from "../../lib/atribucion";
 import Estrellas from "./Estrellas.astro";
+import { marcaDe, rotuloSubcategoria } from "../../lib/ficha";
 
 interface Props {
   producto: ProductoConRelaciones;
@@ -12,6 +13,31 @@ interface Props {
 
 const { producto, resumenResenas = { promedio: 0, total: 0 } } = Astro.props;
 const imagenPrincipal = producto.imagenes.find((img) => img.es_principal) ?? producto.imagenes[0];
+const marca = marcaDe(producto);
+// La subcategoría sólo alimenta el filtro de la categoría: en el catálogo
+// heredado viene sucia (14 productos marcados «CAPUCHON» que son guantes,
+// tapones o botas) y en la tarjeta se leería como un error.
+const subcategoria = rotuloSubcategoria(producto.sub_categoria);
+
+// Las tallas con stock, en una línea: al comprador de dotación le importa si
+// está la 44 antes que abrir la ficha. Numéricas como rango (37–45); las de
+// letra, listadas (S · M · L · XL). Talla única no se menciona.
+const tallasConStock = [...new Set(producto.variantes.filter((v) => v.stock > 0).map((v) => v.talla))]
+  .filter((t) => !/^[uú]nica$/i.test(t));
+const numericas = tallasConStock.map(Number);
+const resumenTallas =
+  tallasConStock.length === 0
+    ? null
+    : numericas.every((n) => !Number.isNaN(n)) && tallasConStock.length > 2
+      ? `Tallas ${Math.min(...numericas)}–${Math.max(...numericas)}`
+      : `Tallas ${tallasConStock.slice(0, 5).join(" · ")}${tallasConStock.length > 5 ? " …" : ""}`;
+const datosProducto = JSON.stringify({
+  sku: producto.sku,
+  nombre: producto.nombre,
+  precio: producto.precio,
+  imagen: imagenPrincipal?.url,
+  variantes: producto.variantes,
+});
 // El código se lee en el servidor: esta tarjeta se pinta en listados y en la
 // venta cruzada del carrito, y no puede depender de que el JS alcance a sellarla.
 const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
@@ -20,77 +46,67 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
 );
 ---
 
-{/* Tarjeta +Control: la foto sobre Blanco Técnico, el dato técnico (Ref.)
-    en SemiBold Acero como pide el manual, y la franja plata que aparece como
-    borde inferior al pasar el cursor. El rojo sólo marca la promoción. */}
-<article class="group relative flex flex-col overflow-hidden rounded-[6px] border border-linea bg-white transition hover:border-plata hover:shadow-[0_10px_30px_-12px_rgba(24,28,55,0.25)]">
-  <button
-    type="button"
-    data-favorito-toggle
-    data-sku={producto.sku}
-    data-slug={producto.slug}
-    data-nombre={producto.nombre}
-    data-precio={producto.precio}
-    data-imagen={imagenPrincipal?.url}
-    aria-label="Guardar en favoritos"
-    aria-pressed="false"
-    class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-acero shadow-sm hover:text-senal"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 20.5s-7-4.35-9.5-8.7C.8 8.6 2 5 5.3 4.2c2-.5 3.9.4 4.7 2 .8-1.6 2.7-2.5 4.7-2 3.3.8 4.5 4.4 2.8 7.6-2.5 4.35-9.5 8.7-9.5 8.7z" />
-    </svg>
-  </button>
-
-  {producto.en_promocion && (
-    <span class="absolute left-3 top-3 z-10 rounded-[4px] bg-white px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-senal shadow-sm">
-      Promoción
-    </span>
-  )}
-
-  <div class="relative bg-tecnico">
-    <a href={`/productos/${producto.slug}`} class="block">
-      <div class="flex aspect-square items-center justify-center overflow-hidden p-5">
+{/* Tarjeta +Control. Sin caja ni botón ancho (la de Wincol es una caja con
+    borde y un botón de lado a lado): la foto sobre Blanco Técnico hace de
+    marco, arriba del nombre va la marca y abajo las tallas que hay. El precio
+    y el «+» comparten renglón. El rojo sólo marca la promoción.
+    Los data-* del <article> los usa el filtro de /categorias/[slug]. */}
+<article
+  data-tarjeta
+  data-marca={marca ?? ""}
+  data-sub={subcategoria ?? ""}
+  data-precio={producto.precio}
+  data-stock={producto.stock}
+  data-nombre={producto.nombre.toLocaleLowerCase("es-CO")}
+  class="group relative flex flex-col"
+>
+  <div class="relative overflow-hidden rounded-[6px] bg-tecnico">
+    <a href={`/productos/${producto.slug}`} class="block" tabindex="-1" aria-hidden="true">
+      <div class="flex aspect-[4/5] items-center justify-center p-6">
         {imagenPrincipal ? (
           <img
             src={imagenPrincipal.url}
             alt={imagenPrincipal.alt ?? producto.nombre}
             loading="lazy"
-            class="h-full w-full object-contain mix-blend-multiply transition duration-300 group-hover:scale-[1.04]"
+            class="h-full w-full object-contain mix-blend-multiply transition duration-500 group-hover:scale-[1.06]"
           />
         ) : (
           <img src="/simbolo-color.svg" alt="" class="h-16 w-16 opacity-20" />
         )}
       </div>
     </a>
+    <span class="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 bg-plata transition duration-300 group-hover:scale-x-100" aria-hidden="true"></span>
 
-    {producto.stock > 0 && (
-      <button
-        type="button"
-        data-abrir-selector-variante
-        data-producto={JSON.stringify({
-          sku: producto.sku,
-          nombre: producto.nombre,
-          precio: producto.precio,
-          imagen: imagenPrincipal?.url,
-          variantes: producto.variantes,
-        })}
-        aria-label="Vista rápida: elegir talla y color"
-        class="absolute inset-x-3 bottom-3 z-10 flex translate-y-1 items-center justify-center gap-1.5 rounded-[6px] bg-brand-500/95 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100 focus-visible:translate-y-0 focus-visible:opacity-100 max-lg:hidden"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        Vista rápida
-      </button>
+    {producto.en_promocion && (
+      <span class="absolute left-3 top-3 z-10 rounded-[4px] bg-white px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-senal">
+        Promoción
+      </span>
     )}
-  </div>
-  <div class="h-[3px] bg-linea transition group-hover:bg-plata" aria-hidden="true"></div>
 
-  <div class="flex flex-1 flex-col p-4">
-    <p class="text-[12px] font-semibold tabular-nums text-acero">Ref. {producto.sku}</p>
-    <h3 class="mt-1 line-clamp-2 text-[15px] font-bold leading-snug tracking-[-0.01em] text-brand-500">
-      <a href={`/productos/${producto.slug}`} class="after:absolute after:inset-0 after:content-['']">{producto.nombre}</a>
+    <button
+      type="button"
+      data-favorito-toggle
+      data-sku={producto.sku}
+      data-slug={producto.slug}
+      data-nombre={producto.nombre}
+      data-precio={producto.precio}
+      data-imagen={imagenPrincipal?.url}
+      aria-label="Guardar en favoritos"
+      aria-pressed="false"
+      class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-acero opacity-0 transition hover:text-senal group-hover:opacity-100 focus-visible:opacity-100 aria-pressed:opacity-100 max-lg:opacity-100"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 20.5s-7-4.35-9.5-8.7C.8 8.6 2 5 5.3 4.2c2-.5 3.9.4 4.7 2 .8-1.6 2.7-2.5 4.7-2 3.3.8 4.5 4.4 2.8 7.6-2.5 4.35-9.5 8.7-9.5 8.7z" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="flex flex-1 flex-col pt-3">
+    <p class="truncate text-[12px] font-semibold text-acero">
+      {marca ?? `Ref. ${producto.sku}`}
+    </p>
+    <h3 class="mt-0.5 line-clamp-2 text-[15px] font-bold leading-snug tracking-[-0.01em] text-brand-500">
+      <a href={`/productos/${producto.slug}`} class="after:absolute after:inset-0 after:content-[''] hover:underline hover:underline-offset-2">{producto.nombre}</a>
     </h3>
 
     {resumenResenas.total > 0 && (
@@ -99,36 +115,36 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
       </div>
     )}
 
-    <div class="mt-auto pt-3">
-      <p class="text-xl font-black tracking-[-0.02em] text-brand-500">{formatearPrecio(producto.precio)}</p>
-      <p class:list={["mt-0.5 flex items-center gap-1.5 text-xs", producto.stock > 0 ? "text-acero" : "text-acero/80"]}>
-        <span class:list={["h-1.5 w-1.5 rounded-full", producto.stock > 0 ? "bg-[#1FAF55]" : "bg-plata"]} aria-hidden="true"></span>
-        {producto.stock > 0 ? `${producto.stock} disponibles` : "Disponibilidad bajo solicitud"}
-      </p>
+    <div class="mt-auto flex items-end justify-between gap-3 pt-3">
+      <div class="min-w-0">
+        <p class="text-lg font-black tabular-nums tracking-[-0.02em] text-brand-500">{formatearPrecio(producto.precio)}</p>
+        <p class="truncate text-[12px] text-acero">
+          {producto.stock > 0 ? (resumenTallas ?? `${producto.stock} disponibles`) : "Bajo pedido"}
+        </p>
+      </div>
 
       {producto.stock > 0 ? (
         <button
           type="button"
           data-abrir-selector-variante
-          data-producto={JSON.stringify({
-            sku: producto.sku,
-            nombre: producto.nombre,
-            precio: producto.precio,
-            imagen: imagenPrincipal?.url,
-            variantes: producto.variantes,
-          })}
-          class="relative z-10 mt-3 w-full rounded-[6px] bg-brand-500 py-2.5 text-sm font-bold text-white transition hover:bg-brand-400"
+          data-producto={datosProducto}
+          aria-label={`Agregar ${producto.nombre} al pedido`}
+          title="Agregar al pedido"
+          class="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] bg-brand-500 text-white transition hover:bg-brand-400"
         >
-          Agregar al pedido
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
         </button>
       ) : (
         <a
           href={enlaceConsultaDisponibilidad}
           target="_blank"
           rel="noopener noreferrer"
-          class="relative z-10 mt-3 flex w-full items-center justify-center rounded-[6px] border border-brand-500 py-2.5 text-sm font-bold text-brand-500 transition hover:bg-tecnico"
+          aria-label={`Consultar disponibilidad de ${producto.nombre} por WhatsApp`}
+          class="relative z-10 flex h-11 shrink-0 items-center rounded-[6px] border border-brand-500 px-3 text-[13px] font-bold text-brand-500 transition hover:bg-tecnico"
         >
-          Consultar disponibilidad
+          Consultar
         </a>
       )}
     </div>

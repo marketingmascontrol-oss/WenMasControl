@@ -37,6 +37,16 @@ formando una cruz (Ley 875 de 2004). Inter Tight. La franja plata (`.franja-plat
 es borde inferior, nunca relleno. Logos: `public/logo-color.svg`, `logo-negativo.svg`,
 `simbolo-*.svg` — se usan los originales, no se redibujan.
 
+## Lo que +Control tiene y Wincol no (para que no vuelvan a parecerse)
+- **Pedido por tallas** en la ficha (`pdp/PedidoPorTallas.astro`): todas las
+  tallas con su stock y cantidades de una, en vez de talla → color → agregar.
+- **Ficha técnica** leída de la descripción «Etiqueta: valor» (`lib/ficha.ts`);
+  la marca sale de ahí cuando `productos.marca` está vacío.
+- **Filtros en la categoría** (tipo, marca, en bodega, orden), en el navegador.
+- Todo lo que entra al carrito pasa por `lib/agregar-medido.ts` (agrega + mide).
+- ⚠️ `sub_categoria` viene sucia del catálogo de Wincol (p. ej. «CAPUCHON» en
+  guantes y tapones): por eso sólo se usa como filtro, no como rótulo visible.
+
 ## Heredado de Wincol que sigue valiendo
 Leer el `CLAUDE.md` de Wincol para el porqué de: las cinco puertas a WhatsApp
 (todas deben llevar el código, las del servidor sin depender del JS), que el
