@@ -36,8 +36,7 @@ function claseTamano(i: number): string {
 
 {visibles.length > 0 && (
   <section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
-    <div class="grid gap-6 sm:grid-cols-[180px_1fr] sm:gap-8">
-      <p class="pt-2 text-sm font-semibold text-acero">01 · Catálogo</p>
+    <div>
       <div class="flex flex-wrap items-end justify-between gap-4">
         <h2 class="text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
           ¿Qué necesita proteger?
@@ -75,8 +74,7 @@ function claseTamano(i: number): string {
                 <img src="/simbolo-color.svg" alt="" class="absolute bottom-4 right-4 h-12 w-12 opacity-20" />
               )}
 
-              <span class="relative flex items-start justify-between gap-2">
-                <span class="text-[11px] font-bold tabular-nums text-acero">{String(i + 1).padStart(2, "0")}</span>
+              <span class="relative flex items-start justify-end gap-2">
                 <span class:list={["flex h-8 w-8 items-center justify-center rounded-full bg-white text-brand-500 ring-1 ring-linea transition group-hover:bg-brand-500 group-hover:text-white group-hover:ring-brand-500", !grande && "max-sm:hidden"]} aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg>
                 </span>

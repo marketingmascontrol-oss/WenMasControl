@@ -38,7 +38,6 @@ const [categorias, productosDestacados, promociones, kits, conteo] = await Promi
     {promociones.length > 0 && (
       <FeaturedGrid
         productos={promociones}
-        rotulo="03 · Promociones"
         titulo="Precios de temporada"
         enlaceVerTodo="/promociones"
         textoVerTodo="Ver todas las promociones →"
@@ -46,7 +45,6 @@ const [categorias, productosDestacados, promociones, kits, conteo] = await Promi
     )}
     <FeaturedGrid
       productos={productosDestacados}
-      rotulo={promociones.length > 0 ? "04 · Destacados" : "03 · Destacados"}
       titulo="Lo que más se pide"
     />
     <Marcas />

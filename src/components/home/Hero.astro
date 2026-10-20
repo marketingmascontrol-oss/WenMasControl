@@ -17,8 +17,7 @@ interface Props {
 // derecha, el kit por oficio: ve qué lleva, cuánto cuesta por persona y lo
 // cotiza para N trabajadores en un mensaje. Wincol no tiene nada parecido.
 //
-// Sin fotografía de fondo a propósito: textura técnica propia sobre Azul
-// Mando, para no parecerse al hero de Wincol ni competir con el LCP en el celular.
+// Fondo: foto de bodega bajo un degradé Azul Mando (detalle abajo).
 const { kits } = Astro.props;
 const codigo = Astro.cookies.get(COOKIE_REF)?.value ?? null;
 const enlaceAsesor = construirEnlaceWhatsAppAsesor("Necesito una cotización por volumen.", codigo);
@@ -33,9 +32,26 @@ const datosKits = JSON.stringify(
 );
 ---
 
-{/* Fondo: textura propia (cuadrícula de plano + grano + barrido plata),
-    generada con scripts/recursos/generar-textura-hero.mjs. */}
-<section class="relative overflow-hidden bg-brand-500 bg-[url(/textura-hero.webp)] bg-cover bg-center text-white">
+{/* Fondo: la foto de bodega en espejo, con el trabajador a la izquierda
+    (a la derecha lo taparía el armador; la banda antes del footer usa la
+    foto al derecho). Va como <img> y no como background para que el navegador la
+    pida primero —es el LCP— y elija el tamaño según la pantalla. Encima, el
+    Azul Mando en degradé para que el texto se lea, y la textura de plano. Las
+    versiones salen de scripts/recursos/generar-fotos-bodega.mjs. */}
+<section class="relative overflow-hidden bg-brand-500 text-white">
+  <img
+    src="/fotos/hero-bodega-1983.webp"
+    srcset="/fotos/hero-bodega-1000.webp 1000w, /fotos/hero-bodega-1983.webp 1983w"
+    sizes="100vw"
+    alt=""
+    aria-hidden="true"
+    fetchpriority="high"
+    decoding="async"
+    class="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-[22%_center] lg:object-left"
+  />
+  <div class="absolute inset-0 bg-gradient-to-r from-brand-500/90 via-brand-500/55 to-brand-500/15" aria-hidden="true"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-brand-500/85 via-transparent to-brand-500/30" aria-hidden="true"></div>
+  <div class="absolute inset-0 bg-[url(/textura-hero.webp)] bg-cover opacity-30 mix-blend-soft-light" aria-hidden="true"></div>
   <div class="relative mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-10 sm:pb-16 sm:pt-14 lg:grid-cols-[1fr_minmax(0,580px)] lg:items-center lg:gap-14 lg:py-12">
     <div>
       <p class="flex items-center gap-3 text-sm font-semibold text-plata">

@@ -5,8 +5,6 @@ import { obtenerResumenResenasPorProductos } from "../../lib/resenas";
 
 interface Props {
   productos: ProductoConRelaciones[];
-  /** Rótulo pequeño a la izquierda, al estilo del manual («03 · Promociones»). */
-  rotulo?: string;
   titulo?: string;
   enlaceVerTodo?: string;
   textoVerTodo?: string;
@@ -14,7 +12,6 @@ interface Props {
 
 const {
   productos,
-  rotulo,
   titulo = "EPP Destacado",
   enlaceVerTodo = "/categorias",
   textoVerTodo = "Ver todo el catálogo →",
@@ -24,8 +21,7 @@ const resumenPorProducto = await obtenerResumenResenasPorProductos(productos.map
 ---
 
 <section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
-  <div class="grid gap-6 sm:grid-cols-[180px_1fr] sm:gap-8">
-    <p class="pt-2 text-sm font-semibold text-acero">{rotulo}</p>
+  <div>
     <div class="flex flex-wrap items-end justify-between gap-4">
       <h2 class="text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">{titulo}</h2>
       <a href={enlaceVerTodo} class="text-sm font-semibold text-brand-500 underline-offset-4 hover:underline">{textoVerTodo}</a>
