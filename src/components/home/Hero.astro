@@ -1,56 +1,65 @@
 ---
-import { construirEnlaceWhatsAppAsesor } from "../../lib/whatsapp";
+import { construirEnlaceWhatsAppAsesor, construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
 import { COOKIE_REF } from "../../lib/atribucion";
+import { formatearPrecio } from "../../lib/formato";
+import { SITE } from "../../lib/site";
+import { mensajeKit } from "../../lib/kit-mensaje";
+import type { Kit } from "../../lib/kits";
 
-// El comprador mayorista no viene a armar un carrito de a una talla: viene a
-// cotizar por volumen. La acción dominante es hablar con el asesor (Arkco360)
-// de una vez, y el catálogo queda como segunda opción para quien quiere mirar.
-// Lección traída de Wincol: con una sola salida al catálogo, el tráfico pago
-// se fugaba en el camino producto → talla → color → carrito → WhatsApp.
-const enlaceAsesor = construirEnlaceWhatsAppAsesor(
-  "Necesito una cotización por volumen.",
-  Astro.cookies.get(COOKIE_REF)?.value ?? null,
+interface Props {
+  kits: Kit[];
+}
+
+// Portada con armador de dotación. El comprador mayorista no viene a armar un
+// carrito de a una talla: viene a dotar una cuadrilla. A la izquierda, la
+// salida directa al asesor (la acción dominante, lección de Wincol: con una
+// sola salida al catálogo el tráfico pago se fugaba en el camino). A la
+// derecha, el kit por oficio: ve qué lleva, cuánto cuesta por persona y lo
+// cotiza para N trabajadores en un mensaje. Wincol no tiene nada parecido.
+//
+// Sin fotografía de fondo a propósito: plano Azul Mando con el símbolo, para
+// no parecerse al hero de Wincol ni competir con el LCP en el celular.
+const { kits } = Astro.props;
+const codigo = Astro.cookies.get(COOKIE_REF)?.value ?? null;
+const enlaceAsesor = construirEnlaceWhatsAppAsesor("Necesito una cotización por volumen.", codigo);
+
+const TRABAJADORES = 10;
+const inicial = kits[0];
+// La puerta del kit se arma en el servidor con el código de la visita: sin
+// JS igual sale bien (con el primer kit y 10 trabajadores).
+const enlaceKitInicial = inicial ? construirEnlaceWhatsAppConsulta(mensajeKit(inicial, TRABAJADORES), codigo) : null;
+const datosKits = JSON.stringify(
+  kits.map((k) => ({ id: k.id, oficio: k.oficio, precio: k.precioPorTrabajador, items: k.items.map((i) => ({ nombre: i.nombre, sku: i.sku })) })),
 );
-
-const pasos = [
-  { n: "01", titulo: "Nos cuenta qué necesita", texto: "Cantidades, tallas y el tipo de trabajo." },
-  { n: "02", titulo: "Le armamos la cotización", texto: "Precio por volumen y disponibilidad real." },
-  { n: "03", titulo: "Lo recibe con factura", texto: "Electrónica, con NIT, en todo el país." },
-];
 ---
 
-{/* Portada: «el único gesto grande» del manual. Plano Azul Mando, el símbolo
-    a escala gigante saliendo por la derecha y la franja plata al pie. Sin
-    fotografía a propósito: así no se parece al hero de Wincol y no hay una
-    imagen pesada compitiendo con el LCP en móvil. */}
 <section class="relative overflow-hidden bg-brand-500 text-white">
   <img
     src="/simbolo-negativo.svg"
     alt=""
     aria-hidden="true"
-    class="pointer-events-none absolute -right-[22vw] top-1/2 w-[min(95vw,820px)] -translate-y-1/2 select-none opacity-[0.16] sm:-right-[12vw] lg:-right-[6vw] lg:opacity-100"
-    width="820"
-    height="820"
+    class="pointer-events-none absolute -right-[12%] top-1/2 hidden w-[900px] -translate-y-1/2 select-none opacity-[0.08] lg:block"
+    width="900"
+    height="900"
   />
-  <div class="absolute inset-0 bg-gradient-to-r from-brand-500 via-brand-500/95 to-brand-500/10 lg:to-transparent" aria-hidden="true"></div>
 
-  <div class="relative mx-auto max-w-7xl px-4 pb-14 pt-12 sm:pb-20 sm:pt-16 lg:pb-24 lg:pt-24">
-    <div class="max-w-2xl">
+  <div class="relative mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-10 sm:pb-16 sm:pt-14 lg:grid-cols-[1fr_minmax(0,580px)] lg:items-center lg:gap-14 lg:py-12">
+    <div>
       <p class="flex items-center gap-3 text-sm font-semibold text-plata">
         <span class="h-[3px] w-8 bg-senal" aria-hidden="true"></span>
         Dotación y EPP para empresas
       </p>
 
-      <h1 class="mt-5 text-[2.6rem] font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl lg:text-[4.75rem]">
+      <h1 class="mt-5 text-[2.6rem] font-black leading-[0.95] tracking-[-0.04em] sm:text-6xl xl:text-[4.5rem]">
         Dotación completa para todo su equipo.
       </h1>
 
-      <p class="mt-6 max-w-xl text-lg text-[#AEB4C4] sm:text-xl">
-        Su equipo protegido antes del próximo turno. Escríbanos por WhatsApp y le
-        armamos el pedido completo, sin recorrer el catálogo talla por talla.
+      <p class="mt-6 max-w-xl text-lg text-[#AEB4C4]">
+        Elija el oficio, revise el kit y cotícelo para toda la cuadrilla en un solo
+        mensaje. Precio por volumen, factura electrónica y entrega en todo el país.
       </p>
 
-      <div class="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
         <a
           href={enlaceAsesor}
           target="_blank"
@@ -62,7 +71,7 @@ const pasos = [
             <path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.48-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.14-.14.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.08-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.28.17-1.41-.07-.13-.27-.2-.57-.35Z"/>
             <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.87 9.87 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.13h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.11.82.83-3.04-.2-.31a8.17 8.17 0 0 1-1.25-4.36c0-4.53 3.7-8.22 8.23-8.22 2.2 0 4.26.86 5.81 2.41a8.16 8.16 0 0 1 2.41 5.82c0 4.53-3.69 8.21-8.23 8.21Z"/>
           </svg>
-          Cotizar por WhatsApp
+          Hablar con un asesor
         </a>
         <a
           href="/categorias"
@@ -73,21 +82,158 @@ const pasos = [
         </a>
       </div>
 
-      <p class="mt-4 text-sm text-[#8B92A8]">
-        ¿Prefiere dejarlo por escrito? <a href="/cotizar" class="font-semibold text-plata underline underline-offset-4 hover:text-white">Arme su solicitud en dos pasos</a>
-      </p>
+      <ul class="mt-10 grid max-w-xl grid-cols-3 gap-px overflow-hidden rounded-[6px] bg-white/10 text-sm">
+        {[
+          ["10+", "unidades con precio por volumen"],
+          ["NIT", "factura electrónica"],
+          ["Gratis", `envío en Bogotá desde ${formatearPrecio(SITE.envioGratisDesde)}`],
+        ].map(([cifra, texto]) => (
+          <li class="bg-brand-500 p-3.5">
+            <span class="block text-lg font-black tabular-nums">{cifra}</span>
+            <span class="block text-[12px] leading-snug text-[#AEB4C4]">{texto}</span>
+          </li>
+        ))}
+      </ul>
     </div>
 
-    <ol class="mt-14 grid gap-px overflow-hidden rounded-[6px] bg-white/10 sm:grid-cols-3 lg:mt-20 lg:max-w-3xl">
-      {pasos.map((paso) => (
-        <li class="bg-brand-500/90 p-5 backdrop-blur-sm">
-          <span class="text-xs font-semibold tabular-nums text-[#8B92A8]">{paso.n}</span>
-          <p class="mt-2 font-extrabold tracking-[-0.01em]">{paso.titulo}</p>
-          <p class="mt-1 text-sm text-[#AEB4C4]">{paso.texto}</p>
-        </li>
-      ))}
-    </ol>
+    {inicial && (
+      <div data-armador data-kits={datosKits} class="overflow-hidden rounded-[6px] bg-white text-brand-500 shadow-2xl shadow-black/30">
+        <div class="border-b border-linea px-5 pb-3 pt-5">
+          <p class="text-[12px] font-semibold text-acero">Armador de dotación</p>
+          <p class="text-lg font-black tracking-[-0.02em]">¿Para qué tipo de trabajo?</p>
+          <div class="-mx-5 mt-3 flex gap-1.5 overflow-x-auto px-5 pb-1" role="tablist" aria-label="Oficio">
+            {kits.map((k, i) => (
+              <button
+                type="button"
+                role="tab"
+                data-tab-kit={k.id}
+                aria-selected={i === 0 ? "true" : "false"}
+                class="shrink-0 rounded-full border border-linea px-3.5 py-1.5 text-[13px] font-bold text-acero transition hover:border-brand-500 hover:text-brand-500 aria-selected:border-brand-500 aria-selected:bg-brand-500 aria-selected:text-white"
+              >
+                {k.oficio}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {kits.map((k, i) => (
+          <div data-panel-kit={k.id} role="tabpanel" hidden={i !== 0} class="px-5 pt-4">
+            <p class="text-[13px] text-acero">{k.descripcion} {k.items.length} productos por trabajador:</p>
+            <ul class="mt-3 grid grid-cols-3 gap-2">
+              {k.items.map((item) => (
+                <li>
+                  <a href={`/productos/${item.slug}`} class="group block">
+                    <span class="flex aspect-[5/4] items-center justify-center overflow-hidden rounded-[6px] bg-tecnico p-2">
+                      {item.imagen && <img src={item.imagen} alt="" loading={i === 0 ? "eager" : "lazy"} class="max-h-full max-w-full object-contain mix-blend-multiply transition duration-300 group-hover:scale-105" />}
+                    </span>
+                    <span class="mt-1 line-clamp-2 text-[11px] font-semibold leading-tight text-brand-500 group-hover:underline">{item.nombre}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+
+        <div class="mt-4 grid grid-cols-[1fr_auto] items-end gap-x-4 gap-y-1 border-t border-linea bg-tecnico px-5 pb-3 pt-4">
+          <div>
+            <p class="text-[12px] font-semibold text-acero">Kit por trabajador</p>
+            <p data-precio-kit class="text-2xl font-black tabular-nums tracking-[-0.02em]">{formatearPrecio(inicial.precioPorTrabajador)}</p>
+          </div>
+          <label class="text-right text-[12px] font-semibold text-acero">
+            Trabajadores
+            <span class="mt-1 flex items-center rounded-[6px] border border-linea bg-white">
+              <button type="button" data-trab-menos aria-label="Un trabajador menos" class="h-9 w-9 text-lg text-acero hover:text-brand-500">−</button>
+              <input
+                data-trabajadores
+                type="number"
+                min="1"
+                max="5000"
+                value={TRABAJADORES}
+                inputmode="numeric"
+                class="h-9 w-14 border-x border-linea text-center text-sm font-bold tabular-nums text-brand-500 outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button type="button" data-trab-mas aria-label="Un trabajador más" class="h-9 w-9 text-lg text-acero hover:text-brand-500">+</button>
+            </span>
+          </label>
+          <p class="col-span-2 mt-1 text-[12px] text-acero">
+            Total de lista <span data-total-kit class="font-bold tabular-nums text-brand-500">{formatearPrecio(inicial.precioPorTrabajador * TRABAJADORES)}</span>
+            · por volumen se cotiza por debajo.
+          </p>
+        </div>
+
+        <div class="bg-tecnico">
+        <a
+          data-cotizar-kit
+          href={enlaceKitInicial}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-wa-origen="hero-kit"
+          class="mx-5 mb-5 flex items-center justify-center gap-2 rounded-[6px] bg-brand-500 px-5 py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-400"
+        >
+          <span data-texto-cotizar>Cotizar kit para {TRABAJADORES} trabajadores</span>
+          <span aria-hidden="true">→</span>
+        </a>
+        </div>
+      </div>
+    )}
   </div>
 
   <div class="franja-plata relative" aria-hidden="true"></div>
 </section>
+
+<script>
+  import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
+  import { formatearPrecio } from "../../lib/formato";
+  import { mensajeKit, type KitParaMensaje } from "../../lib/kit-mensaje";
+
+  const armador = document.querySelector<HTMLElement>("[data-armador]");
+  if (armador) {
+    const kits: (KitParaMensaje & { id: string; precio: number })[] = JSON.parse(armador.dataset.kits || "[]");
+    const tabs = [...armador.querySelectorAll<HTMLButtonElement>("[data-tab-kit]")];
+    const paneles = [...armador.querySelectorAll<HTMLElement>("[data-panel-kit]")];
+    const input = armador.querySelector<HTMLInputElement>("[data-trabajadores]")!;
+    const precioEl = armador.querySelector<HTMLElement>("[data-precio-kit]")!;
+    const totalEl = armador.querySelector<HTMLElement>("[data-total-kit]")!;
+    const boton = armador.querySelector<HTMLAnchorElement>("[data-cotizar-kit]")!;
+    const textoBoton = armador.querySelector<HTMLElement>("[data-texto-cotizar]")!;
+    let activo = kits[0];
+
+    function trabajadores(): number {
+      return Math.min(5000, Math.max(1, Math.floor(Number(input.value)) || 1));
+    }
+
+    function actualizar() {
+      if (!activo) return;
+      const n = trabajadores();
+      precioEl.textContent = formatearPrecio(activo.precio);
+      totalEl.textContent = formatearPrecio(activo.precio * n);
+      textoBoton.textContent = `Cotizar kit para ${n} ${n === 1 ? "trabajador" : "trabajadores"}`;
+      // Sin código explícito: en el navegador construirEnlace… lo lee de la cookie.
+      boton.href = construirEnlaceWhatsAppConsulta(mensajeKit(activo, n));
+      boton.dataset.waOrigen = `hero-kit-${activo.id}`;
+    }
+
+    tabs.forEach((tab) =>
+      tab.addEventListener("click", () => {
+        activo = kits.find((k) => k.id === tab.dataset.tabKit) ?? activo;
+        tabs.forEach((t) => t.setAttribute("aria-selected", String(t === tab)));
+        paneles.forEach((p) => (p.hidden = p.dataset.panelKit !== activo.id));
+        actualizar();
+      })
+    );
+    armador.querySelector("[data-trab-menos]")?.addEventListener("click", () => {
+      input.value = String(trabajadores() - 1);
+      actualizar();
+    });
+    armador.querySelector("[data-trab-mas]")?.addEventListener("click", () => {
+      input.value = String(trabajadores() + 1);
+      actualizar();
+    });
+    input.addEventListener("input", actualizar);
+    input.addEventListener("change", () => {
+      input.value = String(trabajadores());
+      actualizar();
+    });
+    actualizar();
+  }
+</script>

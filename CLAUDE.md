@@ -43,6 +43,9 @@ es borde inferior, nunca relleno. Logos: `public/logo-color.svg`, `logo-negativo
 - **Ficha técnica** leída de la descripción «Etiqueta: valor» (`lib/ficha.ts`);
   la marca sale de ahí cuando `productos.marca` está vacío.
 - **Filtros en la categoría** (tipo, marca, en bodega, orden), en el navegador.
+- **Armador de dotación por oficio** en el hero (`lib/kits.ts`): kits definidos
+  por SKU, se arman con lo visible en la Vitrina (anon key) y se cotizan por
+  WhatsApp para N trabajadores. ⚠️ No hay arnés en el catálogo heredado.
 - Todo lo que entra al carrito pasa por `lib/agregar-medido.ts` (agrega + mide).
 - **Encabezado de una sola barra** con el menú «Catálogo» desplegable con fotos
   (no la fila de categorías de Wincol) y el botón «Su pedido» con el valor.

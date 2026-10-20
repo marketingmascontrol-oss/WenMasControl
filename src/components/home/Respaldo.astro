@@ -2,35 +2,37 @@
 import { SITE } from "../../lib/site";
 import { formatearPrecio } from "../../lib/formato";
 
-// Las razones para comprarle a +Control, con el formato de «dato» del manual:
-// la cifra grande arriba y la explicación corta debajo, separadas por línea.
-const datos = [
-  { cifra: "10+", titulo: "Precio por volumen", texto: "Desde 10 unidades por referencia, cotizado para su empresa." },
-  { cifra: formatearPrecio(SITE.envioGratisDesde), titulo: "Envío gratis en Bogotá", texto: "A partir de ese valor. Despachamos a todo el país." },
-  { cifra: "NIT", titulo: "Facturación electrónica", texto: "A nombre de su empresa, lista para contabilidad." },
-  { cifra: "EPP", titulo: "Asesoría técnica", texto: "Le ayudamos a elegir según el riesgo y la norma." },
+// Cómo es comprarle a +Control, paso a paso. Las cifras de respaldo (10+
+// unidades, NIT, envío gratis) ya están en el hero; acá va lo que el
+// comprador B2B pregunta antes de escribir: qué pasa después del mensaje.
+const pasos = [
+  { n: "01", titulo: "Arme el pedido o el kit", texto: "En el sitio, por tallas y cantidades, o con el kit de su oficio. También puede mandarnos la lista." },
+  { n: "02", titulo: "Lo envía por WhatsApp", texto: "El pedido llega completo al asesor, con referencias y tallas. Sin formularios ni pago en línea." },
+  { n: "03", titulo: "Confirmamos y cotizamos", texto: "Stock real, precio por volumen desde 10 unidades y fecha de entrega. Asesoría técnica si la necesita." },
+  { n: "04", titulo: "Despacho con factura", texto: `Factura electrónica a nombre de su empresa. Envío gratis en Bogotá desde ${formatearPrecio(SITE.envioGratisDesde)}.` },
 ];
 ---
 
 <section class="border-y border-linea bg-tecnico">
   <div class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
     <div class="grid gap-6 sm:grid-cols-[180px_1fr] sm:gap-8">
-      <p class="pt-2 text-sm font-semibold text-acero">02 · Respaldo</p>
+      <p class="pt-2 text-sm font-semibold text-acero">02 · Cómo trabajamos</p>
       <h2 class="max-w-3xl text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
-        Protección que se nota.
+        Del mensaje a su bodega.
       </h2>
     </div>
 
-    <dl class="mt-12 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
-      {datos.map((d) => (
-        <div class="border-t-[3px] border-brand-500 py-6">
-          <dt>
-            <span class="block text-3xl font-black tabular-nums tracking-[-0.03em] text-brand-500">{d.cifra}</span>
-            <span class="mt-3 block font-extrabold text-brand-500">{d.titulo}</span>
-          </dt>
-          <dd class="mt-1 text-[15px] text-acero">{d.texto}</dd>
-        </div>
+    <ol class="mt-12 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-4">
+      {pasos.map((paso, i) => (
+        <li class="relative border-t-[3px] border-brand-500 py-6">
+          {i < pasos.length - 1 && (
+            <span class="absolute -right-6 -top-[9px] hidden text-lg text-acero lg:block" aria-hidden="true">→</span>
+          )}
+          <span class="block text-3xl font-black tabular-nums tracking-[-0.03em] text-brand-500">{paso.n}</span>
+          <p class="mt-3 font-extrabold text-brand-500">{paso.titulo}</p>
+          <p class="mt-1 text-[15px] text-acero">{paso.texto}</p>
+        </li>
       ))}
-    </dl>
+    </ol>
   </div>
 </section>
