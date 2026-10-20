@@ -13,7 +13,8 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "supabase:reset": "supabase db reset",
-    "copiar-wincol": "tsx scripts/copiar-catalogo-wincol.ts"
+    "copiar-wincol": "tsx scripts/copiar-catalogo-wincol.ts",
+    "crear-admin": "tsx scripts/crear-admin.ts"
   },
   "dependencies": {
     "@astrojs/vercel": "^9.0.5",
