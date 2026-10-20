@@ -33,7 +33,7 @@ const resumenPorProducto = await obtenerResumenResenasPorProductos(productos.map
   </div>
 
   {productos.length > 0 ? (
-    <div class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+    <div class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
       {productos.map((producto) => (
         <ProductCard producto={producto} resumenResenas={resumenPorProducto.get(producto.id)} />
       ))}

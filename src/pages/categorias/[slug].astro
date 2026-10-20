@@ -117,7 +117,7 @@ const breadcrumbItems = [
         </div>
 
         <p class="mt-5 text-[13px] text-acero"><span data-conteo class="font-bold text-brand-500">{productos.length}</span> de {productos.length} referencias</p>
-        <div data-grilla class="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+        <div data-grilla class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
           {productos.map((producto) => (
             <ProductCard producto={producto} resumenResenas={resumenPorProducto.get(producto.id)} />
           ))}

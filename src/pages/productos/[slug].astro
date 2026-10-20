@@ -19,6 +19,7 @@ import {
 } from "../../lib/productos";
 import { obtenerResenasAprobadas, obtenerResumenResenas } from "../../lib/resenas";
 import { SITE } from "../../lib/site";
+import { nombreLegible } from "../../lib/formato";
 import { leerFicha, marcaDe } from "../../lib/ficha";
 
 const { slug } = Astro.params;
@@ -100,7 +101,7 @@ const breadcrumbItems = [
           {producto.en_promocion && <span class="rounded-[4px] bg-white px-2 py-1 font-bold uppercase tracking-wide text-senal">Promoción</span>}
         </div>
         <h1 class="mt-3 max-w-4xl text-3xl font-black leading-[1.02] tracking-[-0.035em] sm:text-5xl">
-          {producto.nombre}
+          {nombreLegible(producto.nombre)}
         </h1>
         {resumenResenas.total > 0 && (
           <a href="#resenas" class="mt-3 inline-block hover:opacity-80">

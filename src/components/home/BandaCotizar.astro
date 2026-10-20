@@ -4,46 +4,90 @@ import { COOKIE_REF } from "../../lib/atribucion";
 
 // Cierre de la home: quien bajó hasta acá ya miró y todavía no escribió. Se le
 // ofrece la misma salida del hero, con el código de referencia puesto desde el
-// servidor (no depende de que cargue el JavaScript).
+// servidor (no depende de que cargue el JavaScript), y se le muestra con un
+// ejemplo de conversación qué conviene mandar: el miedo de escribir es no
+// saber qué decir.
 const enlaceAsesor = construirEnlaceWhatsAppAsesor(
   "Quiero cotizar la dotación de mi equipo.",
   Astro.cookies.get(COOKIE_REF)?.value ?? null,
 );
+
+const queMandar = ["Cargos y cuántas personas", "Tallas de cada uno", "Ciudad y fecha de entrega"];
 ---
 
-<section class="relative overflow-hidden bg-brand-500 text-white">
-  <img
-    src="/simbolo-negativo.svg"
-    alt=""
-    aria-hidden="true"
-    class="pointer-events-none absolute -bottom-24 -right-16 w-80 select-none opacity-[0.12] sm:w-[28rem]"
-  />
-  <div class="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 py-16 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
-    <div class="max-w-2xl">
-      <h2 class="text-3xl font-black leading-[0.98] tracking-[-0.035em] sm:text-5xl">
+<section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+  <div class="relative grid gap-10 overflow-hidden rounded-2xl bg-brand-500 bg-[url(/textura-hero.webp)] bg-cover bg-center px-6 py-10 text-white sm:px-10 sm:py-14 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-14 lg:px-14">
+    <div>
+      <p class="flex items-center gap-3 text-sm font-semibold text-plata">
+        <span class="h-[3px] w-8 bg-senal" aria-hidden="true"></span>
+        Cotización por volumen
+      </p>
+      <h2 class="mt-4 text-3xl font-black leading-[0.98] tracking-[-0.035em] sm:text-5xl">
         ¿Dotación para 10 o para 500 personas?
       </h2>
-      <p class="mt-4 text-lg text-[#AEB4C4]">
-        Envíenos la lista con cargos y tallas. Le devolvemos la cotización completa por WhatsApp.
+      <p class="mt-4 max-w-lg text-lg text-[#AEB4C4]">
+        Mándenos la lista y le devolvemos la cotización completa por WhatsApp, con precio por volumen.
       </p>
+
+      <ul class="mt-6 grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+        {queMandar.map((item) => (
+          <li class="flex items-center gap-2 rounded-[6px] bg-white/[0.06] px-3 py-2.5 text-sm font-semibold ring-1 ring-white/10">
+            <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-plata text-brand-500" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7" /></svg>
+            </span>
+            {item}
+          </li>
+        ))}
+      </ul>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <a
+          href={enlaceAsesor}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-wa-origen="banda-home"
+          class="inline-flex items-center justify-center rounded-[6px] bg-white px-7 py-4 font-bold text-brand-500 shadow-lg shadow-black/25 transition hover:bg-tecnico"
+        >
+          Cotizar por WhatsApp
+        </a>
+        <a
+          href="/cotizar"
+          class="inline-flex items-center justify-center rounded-[6px] border border-white/25 px-6 py-4 font-semibold transition hover:border-white/60 hover:bg-white/5"
+        >
+          Prefiero dejarlo por escrito
+        </a>
+      </div>
     </div>
-    <div class="flex flex-col gap-3 sm:flex-row">
-      <a
-        href={enlaceAsesor}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-wa-origen="banda-home"
-        class="inline-flex items-center justify-center rounded-[6px] bg-white px-7 py-4 font-bold text-brand-500 transition hover:bg-tecnico"
-      >
-        Cotizar por WhatsApp
-      </a>
-      <a
-        href="/cotizar"
-        class="inline-flex items-center justify-center rounded-[6px] border border-white/25 px-6 py-4 font-semibold transition hover:border-white/60"
-      >
-        Armar solicitud
-      </a>
+
+    {/* Ejemplo de conversación: ilustra, no es un chat real. */}
+    <div aria-hidden="true" class="relative mx-auto w-full max-w-md select-none">
+      <div class="overflow-hidden rounded-2xl bg-[#EFEAE2] shadow-2xl shadow-black/40 ring-1 ring-black/10">
+        <div class="flex items-center gap-3 bg-[#075E54] px-4 py-3 text-white">
+          <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white">
+            <img src="/simbolo-color.svg" alt="" class="h-5 w-5" />
+          </span>
+          <span class="leading-tight">
+            <span class="block text-sm font-bold">Asesor +Control</span>
+            <span class="block text-[11px] text-white/70">en línea</span>
+          </span>
+        </div>
+        <div class="space-y-3 p-4 text-[13px] leading-snug text-[#111B21]">
+          <div class="ml-auto max-w-[85%] rounded-lg rounded-tr-none bg-[#D9FDD3] px-3 py-2 shadow-sm">
+            <p>Hola, necesito dotación para 25 operarios de obra:</p>
+            <p class="mt-1">• 25 cascos<br />• 25 pares de botas, tallas 38 a 44<br />• 50 pares de guantes de vaqueta<br />• 25 chalecos reflectivos</p>
+            <p class="mt-1">Entrega en Soacha, la próxima semana.</p>
+            <p class="mt-1 text-[11px] text-[#667781]">Ref: MC-G-7K2M</p>
+          </div>
+          <div class="max-w-[85%] rounded-lg rounded-tl-none bg-white px-3 py-2 shadow-sm">
+            <p>¡Con gusto! Ya revisamos stock por talla. Le enviamos la cotización con precio por volumen y la fecha de entrega.</p>
+          </div>
+          <div class="flex w-14 items-center justify-center gap-1 rounded-lg rounded-tl-none bg-white px-3 py-3 shadow-sm">
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8696A0]"></span>
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8696A0] [animation-delay:150ms]"></span>
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-[#8696A0] [animation-delay:300ms]"></span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="franja-plata" aria-hidden="true"></div>
 </section>

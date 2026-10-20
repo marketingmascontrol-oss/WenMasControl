@@ -148,3 +148,20 @@ export async function obtenerProductosEnPromocion(limite?: number): Promise<Prod
   if (error) throw new Error(`Error consultando promociones: ${error.message}`);
   return (data ?? []) as unknown as ProductoConRelaciones[];
 }
+
+// Cuántos productos publicados tiene cada categoría, para el mosaico de la
+// home. Cuenta igual que las listas públicas: con la anon key (lo que la
+// Vitrina deja ver) y sólo productos con foto.
+export async function contarProductosPorCategoria(): Promise<Map<string, number>> {
+  const { data, error } = await supabase
+    .from("productos")
+    .select("categoria_id, producto_imagenes!inner(id)")
+    .eq("activo", true);
+
+  const conteo = new Map<string, number>();
+  if (error) return conteo;
+  for (const p of data ?? []) {
+    if (p.categoria_id) conteo.set(p.categoria_id, (conteo.get(p.categoria_id) ?? 0) + 1);
+  }
+  return conteo;
+}

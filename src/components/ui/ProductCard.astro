@@ -1,10 +1,10 @@
 ---
 import type { ProductoConRelaciones, ResumenResenas } from "../../../types/product";
-import { formatearPrecio } from "../../lib/formato";
+import { formatearPrecio, nombreLegible } from "../../lib/formato";
 import { construirEnlaceWhatsAppConsulta } from "../../lib/whatsapp";
 import { COOKIE_REF } from "../../lib/atribucion";
 import Estrellas from "./Estrellas.astro";
-import { marcaDe, rotuloSubcategoria } from "../../lib/ficha";
+import { leerFicha, marcaDe, rotuloSubcategoria } from "../../lib/ficha";
 
 interface Props {
   producto: ProductoConRelaciones;
@@ -31,6 +31,21 @@ const resumenTallas =
     : numericas.every((n) => !Number.isNaN(n)) && tallasConStock.length > 2
       ? `Tallas ${Math.min(...numericas)}–${Math.max(...numericas)}`
       : `Tallas ${tallasConStock.slice(0, 5).join(" · ")}${tallasConStock.length > 5 ? " …" : ""}`;
+const nombre = nombreLegible(producto.nombre);
+const imagenes = [...producto.imagenes].sort((a, b) => Number(b.es_principal) - Number(a.es_principal) || a.orden - b.orden);
+const segunda = imagenes[1];
+
+// Una línea que diga qué es: el primer dato de la ficha que no sea la marca
+// («Caña en PVC negro con cinta amarilla…»), o el comienzo de la descripción.
+const ficha = leerFicha(producto.descripcion_corta);
+const bajada =
+  ficha.datos.find((d) => !/^marca$/i.test(d.etiqueta))?.valor ??
+  (ficha.resto || producto.descripcion_larga || "").split(/(?<=\.)\s/)[0] ??
+  "";
+
+// Una etiqueta como mucho, en orden de importancia.
+const etiqueta = producto.en_promocion ? "Promoción" : producto.destacado ? "Más pedido" : producto.stock <= 0 ? "Bajo pedido" : null;
+
 const datosProducto = JSON.stringify({
   sku: producto.sku,
   nombre: producto.nombre,
@@ -46,11 +61,11 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
 );
 ---
 
-{/* Tarjeta +Control. Sin caja ni botón ancho (la de Wincol es una caja con
-    borde y un botón de lado a lado): la foto sobre Blanco Técnico hace de
-    marco, arriba del nombre va la marca y abajo las tallas que hay. El precio
-    y el «+» comparten renglón. El rojo sólo marca la promoción.
-    Los data-* del <article> los usa el filtro de /categorias/[slug]. */}
+{/* Tarjeta +Control: tarjeta blanca de esquinas amplias con la foto adentro,
+    sobre Blanco Técnico; etiqueta en píldora, favorito en círculo y, si hay
+    varias fotos, puntos y la segunda al pasar el cursor. Abajo la bajada de la
+    ficha, el precio y el botón redondo de pedido. El rojo sólo marca la
+    promoción. Los data-* del <article> los usa el filtro de /categorias/[slug]. */}
 <article
   data-tarjeta
   data-marca={marca ?? ""}
@@ -58,28 +73,52 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
   data-precio={producto.precio}
   data-stock={producto.stock}
   data-nombre={producto.nombre.toLocaleLowerCase("es-CO")}
-  class="group relative flex flex-col"
+  class="group relative flex flex-col rounded-2xl bg-white p-2.5 shadow-[0_1px_2px_rgba(24,28,55,0.06),0_8px_24px_-12px_rgba(24,28,55,0.18)] ring-1 ring-linea/70 transition duration-300 hover:-translate-y-1 hover:shadow-[0_2px_4px_rgba(24,28,55,0.06),0_22px_44px_-18px_rgba(24,28,55,0.32)]"
 >
-  <div class="relative overflow-hidden rounded-[6px] bg-tecnico">
-    <a href={`/productos/${producto.slug}`} class="block" tabindex="-1" aria-hidden="true">
-      <div class="flex aspect-[4/5] items-center justify-center p-6">
-        {imagenPrincipal ? (
+  <div class="relative overflow-hidden rounded-xl bg-tecnico">
+    <div class="relative flex aspect-square items-center justify-center p-6">
+      {imagenes[0] ? (
+        <>
           <img
-            src={imagenPrincipal.url}
-            alt={imagenPrincipal.alt ?? producto.nombre}
+            src={imagenes[0].url}
+            alt={imagenes[0].alt ?? nombre}
             loading="lazy"
-            class="h-full w-full object-contain mix-blend-multiply transition duration-500 group-hover:scale-[1.06]"
+            class:list={[
+              "h-full w-full object-contain mix-blend-multiply transition duration-500 group-hover:scale-[1.05]",
+              segunda && "group-hover:opacity-0",
+            ]}
           />
-        ) : (
-          <img src="/simbolo-color.svg" alt="" class="h-16 w-16 opacity-20" />
-        )}
-      </div>
-    </a>
-    <span class="absolute inset-x-0 bottom-0 h-[3px] origin-left scale-x-0 bg-plata transition duration-300 group-hover:scale-x-100" aria-hidden="true"></span>
+          {segunda && (
+            <img
+              src={segunda.url}
+              alt=""
+              loading="lazy"
+              aria-hidden="true"
+              class="absolute inset-0 h-full w-full object-contain p-6 opacity-0 mix-blend-multiply transition duration-500 group-hover:opacity-100"
+            />
+          )}
+        </>
+      ) : (
+        <img src="/simbolo-color.svg" alt="" class="h-16 w-16 opacity-20" />
+      )}
+    </div>
 
-    {producto.en_promocion && (
-      <span class="absolute left-3 top-3 z-10 rounded-[4px] bg-white px-2 py-1 text-[11px] font-bold uppercase tracking-wide text-senal">
-        Promoción
+    {imagenes.length > 1 && (
+      <span class="absolute inset-x-0 bottom-2.5 flex justify-center gap-1" aria-hidden="true">
+        {imagenes.slice(0, 4).map((_, i) => (
+          <span class:list={["h-1.5 rounded-full transition-all", i === 0 ? "w-4 bg-brand-500 group-hover:w-1.5 group-hover:bg-plata" : "w-1.5 bg-plata", i === 1 && "group-hover:w-4 group-hover:bg-brand-500"]}></span>
+        ))}
+      </span>
+    )}
+
+    {etiqueta && (
+      <span
+        class:list={[
+          "absolute left-2.5 top-2.5 z-10 rounded-full px-2.5 py-1 text-[11px] font-bold",
+          etiqueta === "Promoción" ? "bg-white text-senal ring-1 ring-senal/20" : "bg-white text-brand-500 ring-1 ring-linea",
+        ]}
+      >
+        {etiqueta}
       </span>
     )}
 
@@ -90,10 +129,10 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
       data-slug={producto.slug}
       data-nombre={producto.nombre}
       data-precio={producto.precio}
-      data-imagen={imagenPrincipal?.url}
+      data-imagen={imagenes[0]?.url}
       aria-label="Guardar en favoritos"
       aria-pressed="false"
-      class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-acero opacity-0 transition hover:text-senal group-hover:opacity-100 focus-visible:opacity-100 aria-pressed:opacity-100 max-lg:opacity-100"
+      class="absolute right-2.5 top-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white text-acero ring-1 ring-linea transition hover:text-senal"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 20.5s-7-4.35-9.5-8.7C.8 8.6 2 5 5.3 4.2c2-.5 3.9.4 4.7 2 .8-1.6 2.7-2.5 4.7-2 3.3.8 4.5 4.4 2.8 7.6-2.5 4.35-9.5 8.7-9.5 8.7z" />
@@ -101,25 +140,27 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
     </button>
   </div>
 
-  <div class="flex flex-1 flex-col pt-3">
-    <p class="truncate text-[12px] font-semibold text-acero">
+  <div class="flex flex-1 flex-col px-1.5 pb-1.5 pt-3.5">
+    <p class="truncate text-[11px] font-bold uppercase tracking-[0.08em] text-acero">
       {marca ?? `Ref. ${producto.sku}`}
     </p>
-    <h3 class="mt-0.5 line-clamp-2 text-[15px] font-bold leading-snug tracking-[-0.01em] text-brand-500">
-      <a href={`/productos/${producto.slug}`} class="after:absolute after:inset-0 after:content-[''] hover:underline hover:underline-offset-2">{producto.nombre}</a>
+    <h3 class="mt-1 line-clamp-2 text-[15px] font-bold leading-snug tracking-[-0.01em] text-brand-500 sm:text-base">
+      <a href={`/productos/${producto.slug}`} class="after:absolute after:inset-0 after:rounded-2xl after:content-['']">{nombre}</a>
     </h3>
+    {bajada && <p class="mt-1 line-clamp-2 text-[13px] leading-snug text-acero">{bajada}</p>}
 
     {resumenResenas.total > 0 && (
-      <div class="mt-1">
+      <div class="mt-1.5">
         <Estrellas promedio={resumenResenas.promedio} total={resumenResenas.total} />
       </div>
     )}
 
-    <div class="mt-auto flex items-end justify-between gap-3 pt-3">
+    <div class="mt-auto flex items-end justify-between gap-3 pt-4">
       <div class="min-w-0">
-        <p class="text-lg font-black tabular-nums tracking-[-0.02em] text-brand-500">{formatearPrecio(producto.precio)}</p>
-        <p class="truncate text-[12px] text-acero">
-          {producto.stock > 0 ? (resumenTallas ?? `${producto.stock} disponibles`) : "Bajo pedido"}
+        <p class="text-lg font-black tabular-nums tracking-[-0.02em] text-brand-500 sm:text-xl">{formatearPrecio(producto.precio)}</p>
+        <p class="flex items-center gap-1.5 truncate text-[12px] text-acero">
+          <span class:list={["h-1.5 w-1.5 shrink-0 rounded-full", producto.stock > 0 ? "bg-[#1FAF55]" : "bg-plata"]} aria-hidden="true"></span>
+          {producto.stock > 0 ? (resumenTallas ?? `${producto.stock} disponibles`) : "Consultar tiempos"}
         </p>
       </div>
 
@@ -128,12 +169,13 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
           type="button"
           data-abrir-selector-variante
           data-producto={datosProducto}
-          aria-label={`Agregar ${producto.nombre} al pedido`}
+          aria-label={`Agregar ${nombre} al pedido`}
           title="Agregar al pedido"
-          class="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-[6px] bg-brand-500 text-white transition hover:bg-brand-400"
+          class="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white shadow-[0_6px_14px_-6px_rgba(24,28,55,0.6)] transition hover:scale-105 hover:bg-brand-400"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 4h8l1 3h3v13H4V7h3l1-3Z" />
+            <path d="M12 11v6M9 14h6" />
           </svg>
         </button>
       ) : (
@@ -141,8 +183,8 @@ const enlaceConsultaDisponibilidad = construirEnlaceWhatsAppConsulta(
           href={enlaceConsultaDisponibilidad}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Consultar disponibilidad de ${producto.nombre} por WhatsApp`}
-          class="relative z-10 flex h-11 shrink-0 items-center rounded-[6px] border border-brand-500 px-3 text-[13px] font-bold text-brand-500 transition hover:bg-tecnico"
+          aria-label={`Consultar disponibilidad de ${nombre} por WhatsApp`}
+          class="relative z-10 flex h-11 shrink-0 items-center rounded-full border border-brand-500 px-4 text-[13px] font-bold text-brand-500 transition hover:bg-tecnico"
         >
           Consultar
         </a>

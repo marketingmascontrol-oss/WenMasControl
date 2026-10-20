@@ -12,17 +12,19 @@ import {
   obtenerCategorias,
   obtenerProductosDestacados,
   obtenerProductosEnPromocion,
+  contarProductosPorCategoria,
 } from "../lib/productos";
 import { SITE } from "../lib/site";
 import { obtenerKits } from "../lib/kits";
 
 // Lo que sale acá lo decide el cliente en /admin/vitrina: «Home» marca los
 // destacados y «Promo» las promociones. Sin marcas, se completa al azar.
-const [categorias, productosDestacados, promociones, kits] = await Promise.all([
+const [categorias, productosDestacados, promociones, kits, conteo] = await Promise.all([
   obtenerCategorias(),
   obtenerProductosDestacados(8),
   obtenerProductosEnPromocion(4),
   obtenerKits(),
+  contarProductosPorCategoria(),
 ]);
 ---
 
@@ -31,7 +33,7 @@ const [categorias, productosDestacados, promociones, kits] = await Promise.all([
 
   <main>
     <Hero kits={kits} />
-    <CategoriasMosaico categorias={categorias} />
+    <CategoriasMosaico categorias={categorias} conteo={conteo} />
     <Respaldo />
     {promociones.length > 0 && (
       <FeaturedGrid

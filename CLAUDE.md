@@ -36,6 +36,9 @@ aparte (`senal`) y sólo como acento, <10% de la pieza, nunca de fondo ni
 formando una cruz (Ley 875 de 2004). Inter Tight. La franja plata (`.franja-plata`)
 es borde inferior, nunca relleno. Logos: `public/logo-color.svg`, `logo-negativo.svg`,
 `simbolo-*.svg` — se usan los originales, no se redibujan.
+Textura de fondo (hero, banda de cotizar, casilla del mosaico): `public/textura-hero.webp`,
+generada con `node scripts/recursos/generar-textura-hero.mjs` — se cambia ahí, no a mano.
+Los nombres del catálogo vienen en MAYÚSCULAS: en pantalla pasan por `nombreLegible()` (`lib/formato.ts`).
 
 ## Lo que +Control tiene y Wincol no (para que no vuelvan a parecerse)
 - **Pedido por tallas** en la ficha (`pdp/PedidoPorTallas.astro`): todas las

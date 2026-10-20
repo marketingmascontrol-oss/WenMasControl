@@ -3,15 +3,35 @@ import type { Categoria } from "../../../types/product";
 
 interface Props {
   categorias: Categoria[];
+  conteo: Map<string, number>;
 }
 
 // «¿Qué necesita proteger?»: el comprador de EPP piensa en una parte del cuerpo
-// o en un riesgo, no en el nombre de la categoría. El mosaico pone las
-// categorías a un toque desde la home, cada una con su foto de portada (se
-// carga en /admin/categorias). Sin foto, la tarjeta igual funciona con el
-// símbolo de la marca.
-const { categorias } = Astro.props;
-const visibles = categorias.filter((c) => c.slug !== "promociones").slice(0, 12);
+// o en un riesgo, no en el nombre de la categoría. Mosaico de tamaños
+// distintos (la primera categoría, en grande; una más ancha abajo) con la foto
+// de portada grande, el número de productos y la parte del cuerpo como
+// palabra principal: «Manos», con «Protección» en chico encima. Cierra con
+// una casilla para cotizar lo que no esté en el catálogo.
+//
+// Las portadas se cargan en /admin/categorias. Sin foto, la casilla igual
+// funciona con el símbolo de la marca.
+const { categorias, conteo } = Astro.props;
+const visibles = categorias.filter((c) => c.slug !== "promociones").slice(0, 11);
+
+function partirNombre(nombre: string): { previo: string | null; principal: string } {
+  const m = nombre.match(/^(Protección)\s+(?:de\s+)?(.+)$/i);
+  if (!m) return { previo: null, principal: nombre };
+  return { previo: m[1], principal: m[2].charAt(0).toUpperCase() + m[2].slice(1) };
+}
+
+// Tamaño de cada casilla según su lugar: la primera ocupa 2×2 y la décima va
+// a lo ancho, para que la grilla de 4 columnas cierre pareja con la casilla
+// de cotizar al final.
+function claseTamano(i: number): string {
+  if (i === 0) return "col-span-2 sm:row-span-2";
+  if (i === 9) return "col-span-2";
+  return "";
+}
 ---
 
 {visibles.length > 0 && (
@@ -28,33 +48,71 @@ const visibles = categorias.filter((c) => c.slug !== "promociones").slice(0, 12)
       </div>
     </div>
 
-    <ul class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {visibles.map((categoria) => (
-        <li>
-          <a
-            href={`/categorias/${categoria.slug}`}
-            class="group relative flex aspect-[4/3] flex-col justify-end overflow-hidden rounded-[6px] bg-tecnico p-4 transition hover:bg-brand-500"
-          >
-            {categoria.imagen_url ? (
-              <img
-                src={categoria.imagen_url}
-                alt=""
-                loading="lazy"
-                class="absolute inset-0 h-full w-full object-contain p-6 pb-14 mix-blend-multiply transition duration-300 group-hover:scale-105 group-hover:mix-blend-normal"
-              />
-            ) : (
-              <img src="/simbolo-color.svg" alt="" class="absolute right-4 top-4 h-10 w-10 opacity-25 transition group-hover:opacity-60" />
-            )}
-            <span class="relative flex items-center justify-between gap-2">
-              <span class="text-[15px] font-extrabold leading-tight tracking-[-0.01em] text-brand-500 transition group-hover:text-white sm:text-base">
-                {categoria.nombre}
+    <ul class="mt-10 grid auto-rows-[170px] grid-cols-2 gap-3 sm:auto-rows-[210px] sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
+      {visibles.map((categoria, i) => {
+        const { previo, principal } = partirNombre(categoria.nombre);
+        const n = conteo.get(categoria.id) ?? 0;
+        const grande = i === 0;
+        return (
+          <li class={claseTamano(i)}>
+            <a
+              href={`/categorias/${categoria.slug}`}
+              class="group relative flex h-full flex-col justify-between overflow-hidden rounded-xl bg-tecnico p-4 ring-1 ring-inset ring-linea transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_18px_40px_-20px_rgba(24,28,55,0.35)] hover:ring-plata sm:p-5"
+            >
+              {categoria.imagen_url ? (
+                <img
+                  src={categoria.imagen_url}
+                  alt=""
+                  loading="lazy"
+                  class:list={[
+                    "pointer-events-none absolute right-0 object-contain mix-blend-multiply transition duration-500 group-hover:scale-[1.07]",
+                    grande
+                      ? "bottom-0 h-[78%] w-[58%] p-4"
+                      : "top-3 h-[50%] w-[62%] p-1 sm:bottom-0 sm:top-auto sm:h-[68%] sm:w-[60%] sm:p-2",
+                  ]}
+                />
+              ) : (
+                <img src="/simbolo-color.svg" alt="" class="absolute bottom-4 right-4 h-12 w-12 opacity-20" />
+              )}
+
+              <span class="relative flex items-start justify-between gap-2">
+                <span class="text-[11px] font-bold tabular-nums text-acero">{String(i + 1).padStart(2, "0")}</span>
+                <span class:list={["flex h-8 w-8 items-center justify-center rounded-full bg-white text-brand-500 ring-1 ring-linea transition group-hover:bg-brand-500 group-hover:text-white group-hover:ring-brand-500", !grande && "max-sm:hidden"]} aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg>
+                </span>
               </span>
-              <span class="text-acero transition group-hover:translate-x-0.5 group-hover:text-white" aria-hidden="true">→</span>
-            </span>
-            <span class="absolute inset-x-0 bottom-0 h-[3px] bg-transparent transition group-hover:bg-plata" aria-hidden="true"></span>
-          </a>
-        </li>
-      ))}
+
+              <span class:list={["relative", grande ? "max-w-[55%]" : "sm:max-w-[60%]"]}>
+                {previo && <span class="block text-[12px] font-semibold text-acero">{previo}</span>}
+                <span class:list={["block font-black leading-[0.95] tracking-[-0.03em] text-brand-500", grande ? "text-3xl sm:text-5xl" : "text-lg sm:text-2xl"]}>
+                  {principal}
+                </span>
+                {n > 0 && (
+                  <span class="mt-2 inline-block rounded-full bg-white px-2 py-0.5 text-[11px] font-bold tabular-nums text-acero ring-1 ring-linea">
+                    {`${n} ${n === 1 ? "producto" : "productos"}`}
+                  </span>
+                )}
+                {grande && (
+                  <span class="mt-3 hidden max-w-xs text-sm text-acero sm:block">Todas las referencias con sus tallas, stock y precio. Arme el pedido por tallas desde la ficha.</span>
+                )}
+              </span>
+            </a>
+          </li>
+        );
+      })}
+
+      <li>
+        <a
+          href="/cotizar"
+          class="group relative flex h-full flex-col justify-between overflow-hidden rounded-xl bg-brand-500 bg-[url(/textura-hero.webp)] bg-cover p-4 text-white transition hover:-translate-y-0.5 sm:p-5"
+        >
+          <span class="text-[11px] font-bold text-plata">¿No lo encuentra?</span>
+          <span>
+            <span class="block text-lg font-black leading-tight tracking-[-0.02em] sm:text-2xl">Lo conseguimos por pedido</span>
+            <span class="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-plata group-hover:text-white">Cotizar <span aria-hidden="true">→</span></span>
+          </span>
+        </a>
+      </li>
     </ul>
   </section>
 )}

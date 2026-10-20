@@ -1,5 +1,7 @@
 ---
 import { SITE } from "../../lib/site";
+import { construirEnlaceWhatsAppAsesor } from "../../lib/whatsapp";
+import { COOKIE_REF } from "../../lib/atribucion";
 import type { Categoria } from "../../../types/product";
 
 interface Props {
@@ -9,69 +11,128 @@ interface Props {
 const { categorias } = Astro.props;
 const anioActual = new Date().getFullYear();
 
-// Una red sin URL todavía se muestra como "próximamente", nunca como un enlace
-// roto: un comprador que toca Instagram y no llega a nada desconfía del resto.
+// El footer se ordena por lo que la gente viene a buscar: arriba la marca y
+// los tres contactos directos; en el medio catálogo, compra y empresa; abajo
+// lo legal. Las redes sólo aparecen cuando tienen dirección: un «(próx.)» se
+// lee como un sitio a medio hacer.
 const redes = [
   { nombre: "Instagram", url: SITE.redes.instagram },
   { nombre: "Facebook", url: SITE.redes.facebook },
   { nombre: "LinkedIn", url: SITE.redes.linkedin },
   { nombre: "TikTok", url: SITE.redes.tiktok },
+].filter((r): r is { nombre: string; url: string } => Boolean(r.url));
+
+// Puerta a WhatsApp con el código de la visita, armada en el servidor.
+const enlaceWhatsApp = construirEnlaceWhatsAppAsesor(undefined, Astro.cookies.get(COOKIE_REF)?.value ?? null);
+
+const comprar = [
+  { texto: "Cotizar por volumen", href: "/cotizar" },
+  { texto: "Promociones", href: "/promociones" },
+  { texto: "Su pedido", href: "/carrito" },
+  { texto: "Favoritos", href: "/favoritos" },
+  { texto: "Preguntas frecuentes", href: "/preguntas-frecuentes" },
+];
+const empresa = [
+  { texto: "Contacto", href: "/contacto" },
+  { texto: "¿Quiere ser proveedor?", href: "/proveedores" },
+  { texto: "Tratamiento de datos", href: "/politica-tratamiento-datos" },
 ];
 ---
 
-<footer class="bg-brand-500 text-[#AEB4C4]">
+<footer class="bg-brand-800 text-[#AEB4C4]">
   <div class="franja-plata" aria-hidden="true"></div>
-  <div class="mx-auto max-w-7xl px-4 pb-10 pt-14">
-    <div class="grid gap-10 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
-      <div>
-        <img src={SITE.logoNegativo} alt={SITE.nombre} class="h-12 w-auto" width="137" height="48" />
-        <p class="mt-5 max-w-xs text-[15px]">{SITE.descripcion}</p>
-        {SITE.direccion && <p class="mt-3 text-sm text-[#8B92A8]">{SITE.direccion}</p>}
-        <ul class="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-          {redes.map((r) => (
-            <li>
-              {r.url ? (
-                <a href={r.url} target="_blank" rel="noopener noreferrer" class="font-semibold text-white hover:text-plata">{r.nombre}</a>
-              ) : (
-                <span class="text-[#7C869A]" title="Próximamente">{r.nombre} (próx.)</span>
-              )}
-            </li>
-          ))}
-        </ul>
+
+  <div class="mx-auto max-w-7xl px-4">
+    <div class="flex flex-col gap-8 border-b border-white/10 py-12 lg:flex-row lg:items-center lg:justify-between">
+      <div class="max-w-sm">
+        <img src={SITE.logoNegativo} alt={SITE.nombre} class="h-11 w-auto" width="137" height="48" loading="lazy" />
+        <p class="mt-4 text-[15px]">{SITE.descripcion} Precio por volumen y factura electrónica a nombre de su empresa.</p>
       </div>
 
-      <nav aria-label="Categorías">
-        <h2 class="text-sm font-bold text-white">Catálogo</h2>
-        <ul class="mt-4 space-y-2 text-sm">
+      <ul class="grid gap-3 sm:grid-cols-3">
+        <li>
+          <a href={enlaceWhatsApp} target="_blank" rel="noopener noreferrer" data-wa-origen="footer" class="flex h-full items-center gap-3 rounded-xl bg-white/[0.05] px-4 py-3.5 ring-1 ring-white/10 transition hover:bg-white/10">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1FAF55] text-white" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.09c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.12.11-1.8-.11-.42-.14-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.37-.14-.2-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.26-.29.57-.36.76-.36h.55c.18 0 .42-.03.64.49.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.19-.15.31-.29.48-.15.17-.3.38-.43.51-.14.14-.29.29-.13.57.16.28.7 1.16 1.51 1.88 1.04.93 1.91 1.22 2.19 1.36.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.28.36-.23.6-.14.24.09 1.53.72 1.79.85.26.14.43.21.5.32.06.11.06.65-.18 1.33Z"/></svg>
+            </span>
+            <span class="leading-tight">
+              <span class="block text-[11px] font-semibold text-plata">WhatsApp</span>
+              <span class="block text-sm font-bold text-white">Hablar con un asesor</span>
+            </span>
+          </a>
+        </li>
+        {SITE.telefono && (
+          <li>
+            <a href={`tel:${SITE.telefonoTel}`} class="flex h-full items-center gap-3 rounded-xl bg-white/[0.05] px-4 py-3.5 ring-1 ring-white/10 transition hover:bg-white/10">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z" /></svg>
+              </span>
+              <span class="leading-tight">
+                <span class="block text-[11px] font-semibold text-plata">Llámenos</span>
+                <span class="block text-sm font-bold tabular-nums text-white">{SITE.telefono}</span>
+              </span>
+            </a>
+          </li>
+        )}
+        {SITE.email && (
+          <li>
+            <a href={`mailto:${SITE.email}`} class="flex h-full items-center gap-3 rounded-xl bg-white/[0.05] px-4 py-3.5 ring-1 ring-white/10 transition hover:bg-white/10">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-white" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+              </span>
+              <span class="min-w-0 leading-tight">
+                <span class="block text-[11px] font-semibold text-plata">Escríbanos</span>
+                <span class="block truncate text-sm font-bold text-white">{SITE.email}</span>
+              </span>
+            </a>
+          </li>
+        )}
+      </ul>
+    </div>
+
+    <div class="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+      <nav aria-label="Catálogo">
+        <h2 class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Catálogo</h2>
+        <ul class="mt-4 grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm">
           {categorias.map((categoria) => (
-            <li><a href={`/categorias/${categoria.slug}`} class="hover:text-white">{categoria.nombre}</a></li>
+            <li><a href={`/categorias/${categoria.slug}`} class="transition hover:text-white">{categoria.nombre}</a></li>
           ))}
         </ul>
       </nav>
 
-      <div>
-        <h2 class="text-sm font-bold text-white">Contacto</h2>
-        <ul class="mt-4 space-y-2 text-sm">
-          {SITE.telefono && <li><a href={`tel:${SITE.telefonoTel}`} class="hover:text-white">{SITE.telefono}</a></li>}
-          {SITE.email && <li><a href={`mailto:${SITE.email}`} class="break-all hover:text-white">{SITE.email}</a></li>}
-          <li><a href="/cotizar" class="hover:text-white">Cotizar por volumen</a></li>
-          <li><a href="/contacto" class="hover:text-white">Contacto</a></li>
-          <li><a href="/preguntas-frecuentes" class="hover:text-white">Preguntas frecuentes</a></li>
+      <nav aria-label="Comprar">
+        <h2 class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Comprar</h2>
+        <ul class="mt-4 space-y-2.5 text-sm">
+          {comprar.map((l) => <li><a href={l.href} class="transition hover:text-white">{l.texto}</a></li>)}
         </ul>
-      </div>
+      </nav>
+
+      <nav aria-label="Empresa">
+        <h2 class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Empresa</h2>
+        <ul class="mt-4 space-y-2.5 text-sm">
+          {empresa.map((l) => <li><a href={l.href} class="transition hover:text-white">{l.texto}</a></li>)}
+        </ul>
+      </nav>
 
       <div>
-        <h2 class="text-sm font-bold text-white">Empresa</h2>
-        <ul class="mt-4 space-y-2 text-sm">
-          <li>Facturación electrónica con NIT</li>
+        <h2 class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Así compra</h2>
+        <ul class="mt-4 space-y-2.5 text-sm">
+          <li>Precio por volumen desde 10 unidades</li>
+          <li>Factura electrónica con NIT</li>
           <li>Asesoría técnica en EPP</li>
-          <li><a href="/proveedores" class="hover:text-white">¿Quiere ser proveedor?</a></li>
-          <li><a href="/politica-tratamiento-datos" class="hover:text-white">Política de tratamiento de datos</a></li>
+          {SITE.direccion && <li>{SITE.direccion} · despachos a todo el país</li>}
         </ul>
+        {redes.length > 0 && (
+          <ul class="mt-6 flex flex-wrap gap-2">
+            {redes.map((r) => (
+              <li><a href={r.url} target="_blank" rel="noopener noreferrer" class="inline-flex rounded-full bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/10 hover:bg-white/10">{r.nombre}</a></li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
 
-    <div class="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-[#7C869A] sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 border-t border-white/10 py-6 text-xs text-[#7C869A] sm:flex-row sm:items-center sm:justify-between">
       <p>&copy; {anioActual} {SITE.razonSocial}. Todos los derechos reservados.</p>
       <p>
         Hecho por <a href="https://socialicons.co" target="_blank" rel="noopener noreferrer" class="hover:text-white">Social Icons</a>
