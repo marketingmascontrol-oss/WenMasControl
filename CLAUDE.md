@@ -44,6 +44,12 @@ es borde inferior, nunca relleno. Logos: `public/logo-color.svg`, `logo-negativo
   la marca sale de ahí cuando `productos.marca` está vacío.
 - **Filtros en la categoría** (tipo, marca, en bodega, orden), en el navegador.
 - Todo lo que entra al carrito pasa por `lib/agregar-medido.ts` (agrega + mide).
+- **Encabezado de una sola barra** con el menú «Catálogo» desplegable con fotos
+  (no la fila de categorías de Wincol) y el botón «Su pedido» con el valor.
+- **Panel del pedido** agrupado por producto con sus tallas, barra de envío
+  gratis y datos de empresa opcionales (empresa, NIT, ciudad) que se suman al
+  mensaje de WhatsApp después del total. Las líneas «• Nx … (SKU: …)» del
+  mensaje NO cambiaron: el bot las lee.
 - ⚠️ `sub_categoria` viene sucia del catálogo de Wincol (p. ej. «CAPUCHON» en
   guantes y tapones): por eso sólo se usa como filtro, no como rótulo visible.
 

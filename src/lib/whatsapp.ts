@@ -46,9 +46,17 @@ function enlace(mensaje: string, codigo?: string | null): string {
 // Arma el link de WhatsApp con el detalle completo del pedido (producto, SKU,
 // cantidad, precio y total) para que Arkco360 pueda atender la conversación
 // con toda la información ya sobre la mesa, sin pasarela de pago propia.
+/** Datos opcionales de quien pide, para que el asesor cotice sin preguntarlos. */
+export interface DatosEmpresa {
+  empresa?: string;
+  nit?: string;
+  ciudad?: string;
+}
+
 export function construirEnlaceWhatsAppPedido(
   carrito: readonly ItemCarrito[],
   codigo?: string | null,
+  datos?: DatosEmpresa,
 ): string {
   const lineas = carrito.map((item) => {
     const subtotal = item.precio * item.cantidad;
@@ -63,9 +71,21 @@ export function construirEnlaceWhatsAppPedido(
     ...lineas,
     "",
     `Total: ${formatearPrecio(total)}`,
+    ...lineasEmpresa(datos),
     "",
     "Quedo atento para coordinar el pago y el envío.",
   ].join("\n"), codigo);
+}
+
+// Las líneas de empresa van después del total y sólo las que se llenaron: un
+// pedido sin datos sale idéntico al de antes.
+function lineasEmpresa(datos?: DatosEmpresa): string[] {
+  const lineas = [
+    datos?.empresa?.trim() && `Empresa: ${datos.empresa.trim()}`,
+    datos?.nit?.trim() && `NIT: ${datos.nit.trim()}`,
+    datos?.ciudad?.trim() && `Entrega en: ${datos.ciudad.trim()}`,
+  ].filter((l): l is string => Boolean(l));
+  return lineas.length ? ["", ...lineas] : [];
 }
 
 // Enlace de WhatsApp con un mensaje simple ya redactado, para consultas de

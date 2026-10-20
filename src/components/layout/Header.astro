@@ -11,23 +11,48 @@ const { categorias } = Astro.props;
 const rutaActual = Astro.url.pathname;
 ---
 
-{/* Header +Control: un plano Azul Mando con el logo en negativo y la franja
-    plata como borde inferior (manual, «Aplicaciones»). Las categorías van a la
-    vista en una fila y no escondidas en un menú: en EPP el comprador llega
-    pensando en una parte del cuerpo —manos, cabeza, pies— y la tiene que ver. */}
+{/* Header +Control: una sola barra Azul Mando con la franja plata como borde
+    inferior (manual, «Aplicaciones»). Wincol apila tres franjas —avisos, logo
+    con buscador, fila de categorías—; acá todo va en un renglón y las
+    categorías viven en el menú «Catálogo», que se abre con sus fotos: en EPP
+    el comprador llega pensando en una parte del cuerpo, y la reconoce antes
+    en una imagen que en un nombre. El pedido se muestra con lo que lleva
+    (unidades y valor), no como un ícono con un número. */}
 <header data-header class="sticky top-0 z-50">
   <div class="bg-brand-500 text-white">
-    <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 lg:flex-nowrap">
-      <a href="/" class="shrink-0" aria-label={`${SITE.nombre}, inicio`}>
-        <img src={SITE.logoNegativo} alt={SITE.nombre} class="h-9 w-auto sm:h-11" width="141" height="49" />
+    <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-3 gap-y-3 px-4 py-3 lg:flex-nowrap lg:gap-x-5">
+      <a href="/" class="mr-1 shrink-0" aria-label={`${SITE.nombre}, inicio`}>
+        <img src={SITE.logoNegativo} alt={SITE.nombre} class="h-8 w-auto sm:h-10" width="141" height="49" />
+      </a>
+
+      <button
+        type="button"
+        id="boton-categorias"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="panel-categorias"
+        class="flex shrink-0 items-center gap-2 rounded-[6px] px-2.5 py-2 text-sm font-bold text-white transition hover:bg-white/10 aria-expanded:bg-white aria-expanded:text-brand-500 max-lg:order-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <path d="M4 6h16M4 12h10M4 18h16" />
+        </svg>
+        <span class="max-sm:sr-only">Catálogo</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" id="chevron-categorias" class="transition-transform max-sm:hidden" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      <a href="/promociones" class="hidden shrink-0 items-center gap-1.5 rounded-[6px] px-2.5 py-2 text-sm font-semibold text-plata transition hover:bg-white/10 hover:text-white xl:flex">
+        <span class="h-1.5 w-1.5 rounded-full bg-senal" aria-hidden="true"></span>
+        Promociones
       </a>
 
       <div class="order-last w-full lg:order-none lg:flex-1">
         <div class="relative mx-auto w-full max-w-2xl">
           <form action="/buscar" method="get" role="search" autocomplete="off">
             <label for="buscador" class="sr-only">Buscar productos EPP</label>
-            <div class="flex overflow-hidden rounded-[6px] bg-white focus-within:ring-2 focus-within:ring-plata">
-              <span class="flex items-center pl-3 text-acero" aria-hidden="true">
+            <div class="flex overflow-hidden rounded-[6px] bg-white/10 ring-1 ring-white/15 transition focus-within:bg-white focus-within:ring-plata">
+              <span class="flex items-center pl-3 text-plata" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m21 21-4.3-4.3" />
@@ -38,16 +63,10 @@ const rutaActual = Astro.url.pathname;
                 name="q"
                 type="search"
                 placeholder="¿Qué necesita proteger? Manos, cabeza, alturas…"
-                class="w-full px-3 py-2.5 text-[15px] text-brand-500 placeholder:text-acero/80 outline-none"
+                class="peer w-full bg-transparent px-3 py-2.5 text-[15px] text-white placeholder:text-plata/80 outline-none focus:text-brand-500 focus:placeholder:text-acero/80"
               />
-              <button type="submit" class="hidden bg-tecnico px-4 text-sm font-semibold text-brand-500 hover:bg-linea sm:block">
-                Buscar
-              </button>
             </div>
           </form>
-          <p class="mt-1 hidden text-right text-[10px] font-medium tracking-wide text-plata/70 lg:block">
-            Búsqueda inteligente · Arkco360
-          </p>
           <div
             id="sugerencias-busqueda"
             class="absolute left-0 right-0 top-full z-40 mt-1 hidden max-h-96 overflow-y-auto rounded-[6px] border border-linea bg-white text-brand-500 shadow-xl"
@@ -55,9 +74,9 @@ const rutaActual = Astro.url.pathname;
         </div>
       </div>
 
-      <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+      <div class="ml-auto flex shrink-0 items-center gap-1 max-lg:order-3 sm:gap-2">
         {SITE.telefono && (
-          <a href={`tel:${SITE.telefonoTel}`} class="mr-2 hidden text-sm font-semibold text-plata hover:text-white xl:block">
+          <a href={`tel:${SITE.telefonoTel}`} class="mr-1 hidden text-sm font-semibold tabular-nums text-plata hover:text-white xl:block">
             {SITE.telefono}
           </a>
         )}
@@ -67,86 +86,88 @@ const rutaActual = Astro.url.pathname;
           </svg>
           <span id="contador-favoritos" class="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-brand-500">0</span>
         </a>
-        <button type="button" id="boton-abrir-carrito" class="relative flex items-center gap-2 rounded-[6px] p-2 text-plata hover:bg-white/10 hover:text-white" aria-label="Ver carrito">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M6 7h12l-1 13H7L6 7Z" />
-            <path d="M9 7a3 3 0 0 1 6 0" />
-          </svg>
-          {/* El único rojo del header: un contador es una señal, que es
-              justo para lo que el manual reserva el Rojo Señal. */}
-          <span id="contador-carrito" class="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-senal px-1 text-[10px] font-bold text-white">0</span>
+        <button
+          type="button"
+          id="boton-abrir-carrito"
+          class="flex items-center gap-2.5 rounded-[6px] bg-white/10 py-1.5 pl-2.5 pr-3 text-left text-white ring-1 ring-white/15 transition hover:bg-white/15"
+          aria-label="Ver pedido"
+        >
+          <span class="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M8 4h8l1 3h3v13H4V7h3l1-3Z" />
+              <path d="M8 12h8M8 16h5" />
+            </svg>
+            {/* El único rojo del header: un contador es una señal, que es
+                justo para lo que el manual reserva el Rojo Señal. */}
+            <span id="contador-carrito" class="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-senal px-1 text-[10px] font-bold text-white">0</span>
+          </span>
+          <span class="hidden leading-tight sm:block">
+            <span class="block text-[11px] font-semibold text-plata">Su pedido</span>
+            <span id="total-carrito" class="block text-sm font-bold tabular-nums">$ 0</span>
+          </span>
         </button>
         <a
           href="/cotizar"
-          class="ml-2 hidden items-center rounded-[6px] bg-white px-4 py-2 text-sm font-bold text-brand-500 transition hover:bg-plata md:inline-flex"
+          class="ml-1 hidden items-center rounded-[6px] bg-white px-4 py-2.5 text-sm font-bold text-brand-500 transition hover:bg-plata md:inline-flex"
         >
           Cotizar por volumen
         </a>
       </div>
     </div>
   </div>
-  <div class="h-[6px] bg-plata" aria-hidden="true"></div>
+  <div class="h-[4px] bg-plata" aria-hidden="true"></div>
 
-  <nav aria-label="Categorías" class="border-b border-linea bg-white/95 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center gap-1 px-4">
-      <div class="relative shrink-0">
-        <button
-          type="button"
-          id="boton-categorias"
-          aria-haspopup="true"
-          aria-expanded="false"
-          class="flex items-center gap-2 py-3 pr-3 text-sm font-bold text-brand-500"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M4 6h16M4 12h10M4 18h16" />
-          </svg>
-          Catálogo
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" id="chevron-categorias" class="transition-transform">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </button>
-        <div
-          id="panel-categorias"
-          class="absolute left-0 top-full z-40 hidden w-72 overflow-hidden rounded-[6px] border border-linea bg-white py-2 shadow-xl"
-        >
-          <a href="/categorias" class="block px-4 py-2 text-sm font-semibold text-brand-500 hover:bg-tecnico">Todo el catálogo</a>
-          <div class="my-1 border-t border-linea"></div>
-          {categorias.map((categoria) => (
-            <a href={`/categorias/${categoria.slug}`} class="block px-4 py-2 text-sm text-acero hover:bg-tecnico hover:text-brand-500">
-              {categoria.nombre}
-            </a>
-          ))}
-        </div>
+  {/* Menú de catálogo: a todo el ancho, debajo de la barra. */}
+  <div
+    id="panel-categorias"
+    class="absolute inset-x-0 top-full hidden max-h-[calc(100dvh-var(--alto-header,120px))] overflow-y-auto border-b border-linea bg-white shadow-[0_24px_48px_-24px_rgba(24,28,55,0.35)]"
+  >
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-6 lg:grid-cols-[1fr_260px] lg:py-8">
+      <div>
+        <p class="text-sm font-semibold text-acero">¿Qué necesita proteger?</p>
+        <ul class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {categorias.filter((c) => c.slug !== "promociones").map((categoria) => {
+            const activa = rutaActual === `/categorias/${categoria.slug}`;
+            return (
+              <li>
+                <a
+                  href={`/categorias/${categoria.slug}`}
+                  class:list={[
+                    "group flex h-full flex-col overflow-hidden rounded-[6px] border-2 transition",
+                    activa ? "border-brand-500" : "border-transparent hover:border-plata",
+                  ]}
+                >
+                  <span class="flex h-24 items-center justify-center overflow-hidden bg-tecnico p-3 sm:h-28">
+                    {categoria.imagen_url ? (
+                      <img src={categoria.imagen_url} alt="" loading="lazy" class="max-h-full max-w-full object-contain mix-blend-multiply transition duration-300 group-hover:scale-105" />
+                    ) : (
+                      <img src="/simbolo-color.svg" alt="" class="h-8 w-8 opacity-25" />
+                    )}
+                  </span>
+                  <span class="px-2 py-2 text-[13px] font-bold leading-tight text-brand-500">{categoria.nombre}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
       </div>
-
-      <span class="h-5 w-px shrink-0 bg-linea" aria-hidden="true"></span>
-
-      <ul class="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap py-2 text-sm [scrollbar-width:none]">
-        <li>
-          <a href="/promociones" class="flex items-center gap-1.5 rounded-[6px] px-3 py-1.5 font-semibold text-brand-500 hover:bg-tecnico">
-            <span class="h-1.5 w-1.5 rounded-full bg-senal" aria-hidden="true"></span>
-            Promociones
+      <div class="flex flex-col gap-2 border-linea lg:border-l lg:pl-8">
+        <a href="/categorias" class="flex items-center justify-between rounded-[6px] bg-brand-500 px-4 py-3 text-sm font-bold text-white hover:bg-brand-400">
+          Todo el catálogo <span aria-hidden="true">→</span>
+        </a>
+        <a href="/promociones" class="flex items-center gap-2 rounded-[6px] px-4 py-3 text-sm font-bold text-brand-500 hover:bg-tecnico">
+          <span class="h-1.5 w-1.5 rounded-full bg-senal" aria-hidden="true"></span> Promociones
+        </a>
+        <a href="/cotizar" class="rounded-[6px] px-4 py-3 text-sm font-semibold text-brand-500 hover:bg-tecnico">Cotizar por volumen</a>
+        <a href="/proveedores" class="rounded-[6px] px-4 py-3 text-sm font-semibold text-acero hover:bg-tecnico hover:text-brand-500">¿Quiere ser proveedor?</a>
+        {SITE.telefono && (
+          <a href={`tel:${SITE.telefonoTel}`} class="mt-auto rounded-[6px] px-4 py-3 text-sm text-acero hover:bg-tecnico">
+            Llámenos <span class="block font-bold tabular-nums text-brand-500">{SITE.telefono}</span>
           </a>
-        </li>
-        {categorias.filter((c) => c.slug !== "promociones").map((categoria) => {
-          const activa = rutaActual === `/categorias/${categoria.slug}`;
-          return (
-            <li>
-              <a
-                href={`/categorias/${categoria.slug}`}
-                class:list={[
-                  "block rounded-[6px] px-3 py-1.5 transition",
-                  activa ? "bg-brand-500 font-semibold text-white" : "text-acero hover:bg-tecnico hover:text-brand-500",
-                ]}
-              >
-                {categoria.nombre.replace(/^Protección (de |)/i, "")}
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+        )}
+      </div>
     </div>
-  </nav>
+  </div>
 </header>
 
 <script>
@@ -162,6 +183,13 @@ const rutaActual = Astro.url.pathname;
 
   import { buscar } from "../../lib/buscador-arkco";
   import { formatearPrecio } from "../../lib/formato";
+  import { $carrito, totalPrecioCarrito } from "../../stores/carrito";
+
+  // El contador de unidades lo pinta BaseLayout; el valor del pedido, acá.
+  const totalCarritoEl = document.getElementById("total-carrito");
+  $carrito.subscribe((c) => {
+    if (totalCarritoEl) totalCarritoEl.textContent = formatearPrecio(totalPrecioCarrito(c));
+  });
 
   document.getElementById("boton-abrir-carrito")?.addEventListener("click", () => {
     window.dispatchEvent(new CustomEvent("abrir-carrito"));
@@ -279,7 +307,12 @@ const rutaActual = Astro.url.pathname;
   });
 
   document.addEventListener("click", (e) => {
-    if (panelCategorias && !panelCategorias.classList.contains("hidden") && !panelCategorias.contains(e.target as Node)) {
+    if (
+      panelCategorias &&
+      !panelCategorias.classList.contains("hidden") &&
+      !panelCategorias.contains(e.target as Node) &&
+      !botonCategorias?.contains(e.target as Node)
+    ) {
       cerrarPanelCategorias();
     }
   });

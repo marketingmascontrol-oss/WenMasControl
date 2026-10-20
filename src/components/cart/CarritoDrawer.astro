@@ -1,79 +1,118 @@
 ---
+import { SITE } from "../../lib/site";
+import { formatearPrecio } from "../../lib/formato";
+
+// Panel del pedido. En Wincol es «Tu carrito» con filas sueltas y un botón
+// verde «Pagar por WhatsApp»; acá es una orden de pedido: agrupada por
+// producto con sus tallas, con lo que falta para el envío gratis, y con los
+// datos de la empresa (opcionales) que el asesor necesita para cotizar y que
+// de otro modo preguntaría en el chat.
 ---
 
-<div id="carrito-drawer" class="fixed inset-0 z-[60] hidden">
+<div id="carrito-drawer" class="fixed inset-0 z-[60] hidden" data-envio-gratis={SITE.envioGratisDesde}>
   <div
     id="carrito-drawer-backdrop"
-    class="absolute inset-0 bg-slate-900/50 opacity-0 transition-opacity duration-300"
+    class="absolute inset-0 bg-brand-800/60 opacity-0 transition-opacity duration-300"
   ></div>
 
   <aside
     id="carrito-drawer-panel"
-    class="absolute inset-y-0 right-0 flex w-full max-w-sm translate-x-full flex-col bg-white shadow-xl transition-transform duration-300 ease-out"
+    class="absolute inset-y-0 right-0 flex w-full max-w-md translate-x-full flex-col bg-white shadow-xl transition-transform duration-300 ease-out"
     role="dialog"
     aria-modal="true"
-    aria-label="Carrito de compras"
+    aria-label="Su pedido"
   >
-    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-      <h2 class="text-lg font-bold text-slate-900">Tu carrito</h2>
-      <button id="carrito-drawer-cerrar" type="button" aria-label="Cerrar carrito" class="text-slate-400 hover:text-slate-700">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
+    <header class="bg-brand-500 text-white">
+      <div class="flex items-start justify-between px-5 pb-4 pt-5">
+        <div>
+          <h2 class="text-xl font-black tracking-[-0.02em]">Su pedido</h2>
+          <p id="carrito-drawer-conteo" class="mt-0.5 text-[13px] text-plata"></p>
+        </div>
+        <button id="carrito-drawer-cerrar" type="button" aria-label="Cerrar pedido" class="-mr-1 rounded-[6px] p-1 text-plata hover:bg-white/10 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      {SITE.envioGratisDesde > 0 && (
+        <div id="carrito-drawer-envio" class="hidden px-5 pb-4">
+          <p id="carrito-drawer-envio-texto" class="text-[12px] font-semibold text-white"></p>
+          <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-white/15">
+            <div id="carrito-drawer-envio-barra" class="h-full w-0 rounded-full bg-plata transition-[width] duration-500"></div>
+          </div>
+        </div>
+      )}
+      <div class="h-[3px] bg-plata" aria-hidden="true"></div>
+    </header>
 
-    <div class="flex-1 overflow-y-auto px-5 py-4">
-      <p id="carrito-drawer-vacio" class="hidden text-sm text-slate-500">
-        Tu carrito está vacío.
-        <a href="/" class="text-brand-600 hover:text-brand-700">Ver catálogo</a>.
-      </p>
-      <div id="carrito-drawer-items" class="space-y-3"></div>
+    <div class="flex-1 overflow-y-auto px-5">
+      <div id="carrito-drawer-vacio" class="hidden py-12 text-center">
+        <img src="/simbolo-color.svg" alt="" class="mx-auto h-12 w-12 opacity-20" />
+        <p class="mt-4 font-bold text-brand-500">Su pedido está vacío</p>
+        <p class="mt-1 text-sm text-acero">Agregue productos desde el catálogo, con las tallas que necesite.</p>
+        <a href="/categorias" class="mt-5 inline-flex rounded-[6px] bg-brand-500 px-5 py-2.5 text-sm font-bold text-white hover:bg-brand-400">Ver catálogo</a>
+      </div>
 
-      <a
-        href="/"
-        id="carrito-drawer-seguir-comprando"
-        class="mt-4 hidden w-full items-center justify-center rounded-md border border-slate-300 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-slate-400"
-      >
-        Seguir comprando
-      </a>
+      <div id="carrito-drawer-items" class="divide-y divide-linea"></div>
 
-      <div id="carrito-drawer-cruzada" class="mt-6 hidden">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">También te puede interesar</p>
-        <div id="carrito-drawer-cruzada-items" class="grid grid-cols-2 gap-2"></div>
+      <details id="carrito-drawer-empresa" class="group mb-4 hidden rounded-[6px] border border-linea">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
+          <span>
+            <span class="block text-sm font-bold text-brand-500">Datos de su empresa</span>
+            <span class="block text-[12px] text-acero">Opcional · van en el mensaje para cotizar más rápido</span>
+          </span>
+          <span class="text-acero transition group-open:rotate-45" aria-hidden="true">+</span>
+        </summary>
+        <div class="grid gap-3 border-t border-linea p-4">
+          <label class="block text-[12px] font-semibold text-acero">Empresa
+            <input data-empresa="empresa" maxlength="80" autocomplete="organization" class="mt-1 w-full rounded-[6px] border border-linea px-3 py-2 text-sm text-brand-500 outline-none focus:ring-2 focus:ring-brand-500" />
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block text-[12px] font-semibold text-acero">NIT
+              <input data-empresa="nit" maxlength="20" inputmode="numeric" class="mt-1 w-full rounded-[6px] border border-linea px-3 py-2 text-sm text-brand-500 outline-none focus:ring-2 focus:ring-brand-500" />
+            </label>
+            <label class="block text-[12px] font-semibold text-acero">Ciudad de entrega
+              <input data-empresa="ciudad" maxlength="60" autocomplete="address-level2" class="mt-1 w-full rounded-[6px] border border-linea px-3 py-2 text-sm text-brand-500 outline-none focus:ring-2 focus:ring-brand-500" />
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <div id="carrito-drawer-cruzada" class="mb-6 hidden">
+        <p class="mb-2 text-[12px] font-semibold text-acero">Suele pedirse junto</p>
+        <div id="carrito-drawer-cruzada-items" class="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1"></div>
       </div>
     </div>
 
-    <div id="carrito-drawer-resumen" class="hidden border-t border-slate-200 px-5 py-4">
-      <div class="mb-3 flex items-center justify-between">
-        <span class="text-sm text-slate-500">Total</span>
-        <span id="carrito-drawer-total" class="text-lg font-bold text-slate-900"></span>
+    <div id="carrito-drawer-resumen" class="hidden border-t border-linea bg-tecnico px-5 py-4">
+      <div class="mb-3 flex items-baseline justify-between">
+        <span class="text-sm font-semibold text-acero">Total del pedido</span>
+        <span id="carrito-drawer-total" class="text-2xl font-black tabular-nums tracking-[-0.02em] text-brand-500"></span>
       </div>
       <button
         type="button"
         id="carrito-drawer-whatsapp"
-        class="flex w-full items-center justify-center gap-2 rounded-md bg-green-600 py-3 text-sm font-semibold text-white hover:bg-green-500"
+        class="flex w-full items-center justify-center gap-2 rounded-[6px] bg-brand-500 py-3.5 text-[15px] font-bold text-white hover:bg-brand-400"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
           <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.09c-.24.68-1.4 1.3-1.93 1.38-.5.08-1.12.11-1.8-.11-.42-.14-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.37-.14-.2-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.26-.29.57-.36.76-.36h.55c.18 0 .42-.03.64.49.24.58.82 2 .89 2.15.07.14.12.31.02.5-.1.19-.15.31-.29.48-.15.17-.3.38-.43.51-.14.14-.29.29-.13.57.16.28.7 1.16 1.51 1.88 1.04.93 1.91 1.22 2.19 1.36.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.28.36-.23.6-.14.24.09 1.53.72 1.79.85.26.14.43.21.5.32.06.11.06.65-.18 1.33Z"/>
         </svg>
-        Pagar por WhatsApp
+        Enviar pedido por WhatsApp
       </button>
-      <a
-        href="/carrito"
-        class="mt-2 block w-full rounded-md border border-slate-300 py-2.5 text-center text-sm font-semibold text-slate-700 hover:border-slate-400"
-      >
-        Ver carrito completo
+      <p class="mt-2 text-center text-[12px] text-acero">Un asesor confirma stock, precio por volumen y entrega. Sin pago en línea.</p>
+      <a href="/carrito" class="mt-2 block text-center text-[13px] font-semibold text-brand-500 underline-offset-2 hover:underline">
+        Ver pedido completo
       </a>
     </div>
   </aside>
 </div>
 
 <script>
-  import { $carrito, totalPrecioCarrito, type ItemCarrito } from "../../stores/carrito";
-  import { crearFilaCarrito, crearTarjetaSugerida, type ProductoSugerido } from "../../lib/carrito-ui";
+  import { $carrito, totalPrecioCarrito, totalItemsCarrito, type ItemCarrito } from "../../stores/carrito";
+  import { agruparPorProducto, crearGrupoPedido, crearTarjetaSugerida, type ProductoSugerido } from "../../lib/carrito-ui";
   import { formatearPrecio } from "../../lib/formato";
   import { construirEnlaceWhatsAppPedido } from "../../lib/whatsapp";
+  import { leerDatosEmpresa, guardarDatosEmpresa } from "../../lib/datos-empresa";
   import { reportarClicWhatsApp, reportarCompra } from "../../lib/medicion";
 
   const drawer = document.getElementById("carrito-drawer")!;
@@ -83,9 +122,27 @@
   const vacioEl = document.getElementById("carrito-drawer-vacio")!;
   const resumenEl = document.getElementById("carrito-drawer-resumen")!;
   const totalEl = document.getElementById("carrito-drawer-total")!;
-  const seguirComprandoEl = document.getElementById("carrito-drawer-seguir-comprando")!;
+  const conteoEl = document.getElementById("carrito-drawer-conteo")!;
+  const empresaEl = document.getElementById("carrito-drawer-empresa")!;
   const cruzadaEl = document.getElementById("carrito-drawer-cruzada")!;
   const cruzadaItemsEl = document.getElementById("carrito-drawer-cruzada-items")!;
+  const envioEl = document.getElementById("carrito-drawer-envio");
+  const envioTextoEl = document.getElementById("carrito-drawer-envio-texto");
+  const envioBarraEl = document.getElementById("carrito-drawer-envio-barra");
+  const envioGratis = Number(drawer.dataset.envioGratis) || 0;
+
+  // Los datos de la empresa se recuerdan en este navegador (comodidad para el
+  // que pide seguido); si el almacenamiento falla, el formulario arranca vacío.
+  const camposEmpresa = [...empresaEl.querySelectorAll<HTMLInputElement>("[data-empresa]")];
+  const guardados = leerDatosEmpresa();
+  camposEmpresa.forEach((campo) => {
+    const clave = campo.dataset.empresa as keyof typeof guardados;
+    campo.value = guardados[clave] ?? "";
+    campo.addEventListener("input", () => guardarDatosEmpresa(datosEmpresa()));
+  });
+  function datosEmpresa() {
+    return Object.fromEntries(camposEmpresa.map((c) => [c.dataset.empresa!, c.value]));
+  }
 
   let ultimosSkusSugeridos = "";
 
@@ -104,14 +161,29 @@
     }
   }
 
+  function renderEnvio(total: number, vacio: boolean) {
+    if (!envioEl || !envioTextoEl || !envioBarraEl || envioGratis <= 0) return;
+    envioEl.classList.toggle("hidden", vacio);
+    const falta = envioGratis - total;
+    envioTextoEl.textContent =
+      falta > 0 ? `Le faltan ${formatearPrecio(falta)} para el envío gratis en Bogotá` : "Su pedido tiene envío gratis en Bogotá ✓";
+    envioBarraEl.style.width = `${Math.min(100, (total / envioGratis) * 100)}%`;
+  }
+
   function render(carrito: readonly ItemCarrito[]) {
-    contenedorItems.replaceChildren(...carrito.map(crearFilaCarrito));
+    const grupos = agruparPorProducto(carrito);
+    contenedorItems.replaceChildren(...grupos.map(crearGrupoPedido));
     const vacio = carrito.length === 0;
+    const total = totalPrecioCarrito(carrito);
+    const unidades = totalItemsCarrito(carrito);
     vacioEl.classList.toggle("hidden", !vacio);
     resumenEl.classList.toggle("hidden", vacio);
-    seguirComprandoEl.classList.toggle("hidden", vacio);
-    seguirComprandoEl.classList.toggle("flex", !vacio);
-    totalEl.textContent = formatearPrecio(totalPrecioCarrito(carrito));
+    empresaEl.classList.toggle("hidden", vacio);
+    conteoEl.textContent = vacio
+      ? "Sin productos todavía"
+      : `${unidades} ${unidades === 1 ? "unidad" : "unidades"} · ${grupos.length} ${grupos.length === 1 ? "referencia" : "referencias"}`;
+    totalEl.textContent = formatearPrecio(total);
+    renderEnvio(total, vacio);
 
     if (vacio) {
       cruzadaEl.classList.add("hidden");
@@ -154,7 +226,7 @@
     // mide que se abrió una conversación, la Compra mide cuánto valía. Sin la
     // segunda, Ads no puede aprender cuánto vale en promedio un pedido.
     reportarCompra(carrito, "carrito-drawer");
-    window.open(construirEnlaceWhatsAppPedido(carrito), "_blank", "noopener,noreferrer");
+    window.open(construirEnlaceWhatsAppPedido(carrito, undefined, datosEmpresa()), "_blank", "noopener,noreferrer");
   });
 
   render($carrito.get());

@@ -82,7 +82,9 @@ const breadcrumbItems = [
 
     {productos.length > 0 ? (
       <div data-catalogo class="mx-auto max-w-7xl px-4 pb-16">
-        <div class="sticky top-[var(--alto-header,0px)] z-20 -mx-4 border-b border-linea bg-white/95 px-4 py-3 backdrop-blur">
+        {/* En el celular la barra no se pega: con tipos, marca, stock y orden
+            serían dos renglones fijos tapando la grilla. */}
+        <div class="z-20 -mx-4 border-b border-linea bg-white/95 px-4 py-3 backdrop-blur sm:sticky sm:top-[var(--alto-header,0px)]">
           <div class="flex flex-wrap items-center gap-2">
             {tipos.length > 1 && (
               <div class="-mx-1 flex max-w-full gap-1.5 overflow-x-auto px-1" role="group" aria-label="Tipo de producto">
@@ -94,17 +96,17 @@ const breadcrumbItems = [
                 ))}
               </div>
             )}
-            <div class="ml-auto flex flex-wrap items-center gap-2">
+            <div class="-mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 sm:ml-auto sm:w-auto">
               {marcas.length > 1 && (
-                <select data-marca aria-label="Marca" class="rounded-[6px] border border-linea bg-white px-3 py-1.5 text-[13px] font-semibold text-brand-500">
+                <select data-marca aria-label="Marca" class="shrink-0 rounded-[6px] border border-linea bg-white px-3 py-1.5 text-[13px] font-semibold text-brand-500">
                   <option value="">Todas las marcas</option>
                   {marcas.map(([m, n]) => <option value={m}>{m} ({n})</option>)}
                 </select>
               )}
-              <label class="flex cursor-pointer items-center gap-2 rounded-[6px] border border-linea px-3 py-1.5 text-[13px] font-semibold text-brand-500">
+              <label class="flex shrink-0 cursor-pointer items-center gap-2 rounded-[6px] border border-linea px-3 py-1.5 text-[13px] font-semibold text-brand-500">
                 <input type="checkbox" data-solo-stock class="accent-[#181c37]" /> En bodega
               </label>
-              <select data-orden aria-label="Ordenar" class="rounded-[6px] border border-linea bg-white px-3 py-1.5 text-[13px] font-semibold text-brand-500">
+              <select data-orden aria-label="Ordenar" class="shrink-0 rounded-[6px] border border-linea bg-white px-3 py-1.5 text-[13px] font-semibold text-brand-500">
                 <option value="">Recomendados</option>
                 <option value="precio-asc">Menor precio</option>
                 <option value="precio-desc">Mayor precio</option>
