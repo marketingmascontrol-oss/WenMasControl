@@ -46,8 +46,18 @@ const rutaActual = Astro.url.pathname;
         <span class="h-1.5 w-1.5 rounded-full bg-senal" aria-hidden="true"></span>
         Promociones
       </a>
-      <a href="/servicios" class="hidden shrink-0 rounded-[6px] px-2.5 py-2 text-sm font-semibold text-plata transition hover:bg-white/10 hover:text-white xl:flex">
-        Servicios SG-SST
+      {/* Servicios va resaltado, no como un enlace más: es la otra línea de
+          negocio de +Control (consultoría en SG-SST), y entre los productos se
+          perdía. En el celular queda corto, «SG-SST», junto al Catálogo. */}
+      <a
+        href="/servicios"
+        class="flex shrink-0 items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-sm font-bold text-white ring-1 ring-plata/60 transition hover:bg-white hover:text-brand-500 max-lg:order-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3Z" /><path d="m9 12 2 2 4-4" />
+        </svg>
+        <span class="xl:hidden">SG-SST</span>
+        <span class="hidden xl:inline">Servicios SG-SST</span>
       </a>
 
       <div class="order-last w-full lg:order-none lg:flex-1">
@@ -161,7 +171,12 @@ const rutaActual = Astro.url.pathname;
         <a href="/promociones" class="flex items-center gap-2 rounded-[6px] px-4 py-3 text-sm font-bold text-brand-500 hover:bg-tecnico">
           <span class="h-1.5 w-1.5 rounded-full bg-senal" aria-hidden="true"></span> Promociones
         </a>
-        <a href="/servicios" class="rounded-[6px] px-4 py-3 text-sm font-bold text-brand-500 hover:bg-tecnico">Servicios SG-SST <span class="block text-xs font-medium text-acero">Consultoría y acompañamiento</span></a>
+        <a href="/servicios" class="flex items-center gap-3 rounded-[6px] bg-tecnico px-4 py-3 text-sm font-bold text-brand-500 ring-1 ring-inset ring-linea hover:ring-brand-500">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3Z" /><path d="m9 12 2 2 4-4" /></svg>
+          </span>
+          <span>Servicios SG-SST <span class="block text-xs font-medium text-acero">Consultoría y acompañamiento</span></span>
+        </a>
         <a href="/cotizar" class="rounded-[6px] px-4 py-3 text-sm font-semibold text-brand-500 hover:bg-tecnico">Cotizar por volumen</a>
         <a href="/proveedores" class="rounded-[6px] px-4 py-3 text-sm font-semibold text-acero hover:bg-tecnico hover:text-brand-500">¿Quiere ser proveedor?</a>
         {SITE.telefono && (
