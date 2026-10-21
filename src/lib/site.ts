@@ -11,12 +11,12 @@ export const SITE = {
   nombre: "+Control",
   razonSocial: "Multiservicios Más Control S.A.S.",
   descripcion: "Dotación, EPP y seguridad industrial para empresas.",
-  // 🔶 PENDIENTE: dominio real. De acá salen los canónicos, el sitemap, el
+  // Dominio comprado en Namecheap (21/10/2026), apuntado a Vercel. De acá salen los canónicos, el sitemap, el
   // og:url y el JSON-LD.
-  url: "https://www.mascontrol.com.co",
+  url: "https://www.multiserviciosmascontrol.com",
   // Dominios que pueden reportar a las plataformas de publicidad (ver
   // dominio.ts). Un preview de Vercel o `npm run dev` nunca mide.
-  dominios: ["mascontrol.com.co"],
+  dominios: ["multiserviciosmascontrol.com"],
   // Dominios viejos que redirigen con 301 al principal (ver middleware.ts).
   dominiosViejos: [] as string[],
 

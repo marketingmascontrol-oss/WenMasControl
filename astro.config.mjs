@@ -3,8 +3,8 @@ import tailwindcss from "@tailwindcss/vite";
 import vercel from "@astrojs/vercel";
 
 export default defineConfig({
-  // 🔶 PENDIENTE: dominio real. Tiene que coincidir con SITE.url (src/lib/site.ts).
-  site: "https://www.mascontrol.com.co",
+  // Dominio real. Tiene que coincidir con SITE.url (src/lib/site.ts).
+  site: "https://www.multiserviciosmascontrol.com",
   // "server": on-demand por defecto. El catálogo lo edita un admin en vivo
   // (precio/stock/descripciones/imágenes), así que las páginas de producto y
   // categoría consultan Supabase en cada request — sin eso, cada edición
@@ -32,8 +32,8 @@ export default defineConfig({
   security: {
     allowedDomains: [
       { hostname: "**.vercel.app", protocol: "https" },
-      { hostname: "mascontrol.com.co", protocol: "https" },
-      { hostname: "www.mascontrol.com.co", protocol: "https" },
+      { hostname: "multiserviciosmascontrol.com", protocol: "https" },
+      { hostname: "www.multiserviciosmascontrol.com", protocol: "https" },
     ],
   },
   vite: {
@@ -46,7 +46,7 @@ export default defineConfig({
       // que servir el sitio local bajo el dominio real —mapeando el dominio a
       // 127.0.0.1 en el navegador—. Sin esta línea, Vite responde "Blocked
       // request" y la prueba parece un fallo del código cuando no lo es.
-      allowedHosts: ["www.mascontrol.com.co", "mascontrol.com.co"],
+      allowedHosts: ["www.multiserviciosmascontrol.com", "multiserviciosmascontrol.com"],
     },
   },
 });
