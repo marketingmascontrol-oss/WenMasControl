@@ -25,19 +25,18 @@ export const SITE = {
   logoNegativo: "/logo-negativo.svg", // sobre Azul Mando
 
   // ☎️ EL TELÉFONO PARA LLAMAR. Sale en header, footer y contacto detrás de `tel:`.
-  // 🔶 PENDIENTE
-  telefono: "+57 300 000 0000",
-  telefonoTel: "+573000000000",
+  telefono: "321 392 0075",
+  telefonoTel: "+573213920075",
 
   // 💬 EL WHATSAPP QUE ATIENDE ARKCO360 — sólo dígitos y con indicativo.
   // Separado del de llamar a propósito: en Wincol compartieron constante y los
   // pedidos del carrito terminaron en una línea sin bot.
-  // 🔶 PENDIENTE: el número conectado a Meta y al bot de +Control.
-  whatsapp: "573000000000",
+  // Hoy es el mismo número de llamar (confirmado por el cliente, 21/10/2026).
+  whatsapp: "573213920075",
 
-  // 🔶 PENDIENTE
-  email: "ventas@mascontrol.com.co",
-  direccion: "Bogotá, Colombia",
+  // Correo y dirección tomados del portafolio de servicios del cliente (2026).
+  email: "mascontrol.sas.comercial@gmail.com",
+  direccion: "Calle 64 #9A-14 Of. 102, Ed. Lebreles, Bogotá",
   envioGratisDesde: 300000,
   redes: {
     // Si es null se muestra como "próximamente" en el footer, no como link.

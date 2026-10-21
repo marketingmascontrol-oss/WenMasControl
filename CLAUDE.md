@@ -56,6 +56,9 @@ Los nombres del catálogo vienen en MAYÚSCULAS: en pantalla pasan por `nombreLe
   gratis y datos de empresa opcionales (empresa, NIT, ciudad) que se suman al
   mensaje de WhatsApp después del total. Las líneas «• Nx … (SKU: …)» del
   mensaje NO cambiaron: el bot las lee.
+- **Página de servicios** (`/servicios`): SG-SST, sectores, acompañamiento y
+  suministros, sacada del portafolio del cliente (2026). Sus WhatsApp usan
+  `construirEnlaceWhatsAppServicio` (mensaje propio, no «dotación al por mayor»).
 - ⚠️ `sub_categoria` viene sucia del catálogo de Wincol (p. ej. «CAPUCHON» en
   guantes y tapones): por eso sólo se usa como filtro, no como rótulo visible.
 
@@ -66,5 +69,5 @@ píxel y Ads NO van también en GTM, `content_ids` = SKU, y que ventas/leads viv
 en Arkco360 y no se construyen pantallas para eso acá.
 
 ## Pendientes antes de publicar (marcados 🔶 en `site.ts`)
-Dominio, teléfono, WhatsApp del bot, correo, redes, IDs de medición, tenant de
+Dominio, redes, IDs de medición, tenant de
 Arkco, imagen OG 1200×630, SKUs con «WINCOL» y fotos con el logo de Wincol en el catálogo.

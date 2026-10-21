@@ -114,3 +114,21 @@ export function construirEnlaceWhatsAppAsesor(contexto?: string, codigo?: string
     codigo,
   );
 }
+
+/**
+ * Puerta de /servicios: consultoría en SG-SST, planes de acompañamiento y
+ * soluciones por sector. Mensaje propio para que el asesor sepa de entrada que
+ * no es un pedido de dotación; el código de la visita va igual que en las demás.
+ */
+export function construirEnlaceWhatsAppServicio(contexto?: string, codigo?: string | null): string {
+  return enlace(
+    [
+      "¡Hola! Quiero información sobre sus servicios de Seguridad y Salud en el Trabajo.",
+      contexto ? `\n${contexto}` : "",
+      "\n¿Me pueden asesorar?",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    codigo,
+  );
+}

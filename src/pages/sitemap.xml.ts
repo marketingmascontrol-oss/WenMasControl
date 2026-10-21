@@ -11,6 +11,7 @@ export const prerender = false;
 const PAGINAS_ESTATICAS = [
   "/",
   "/cotizar",
+  "/servicios",
   "/categorias",
   "/promociones",
   "/contacto",

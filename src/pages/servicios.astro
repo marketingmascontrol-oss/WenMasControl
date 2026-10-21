@@ -1,0 +1,424 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import { obtenerCategorias } from "../lib/productos";
+import { SITE } from "../lib/site";
+import { construirEnlaceWhatsAppServicio } from "../lib/whatsapp";
+import { COOKIE_REF } from "../lib/atribucion";
+
+// Servicios de Seguridad y Salud en el Trabajo, sacados del portafolio del
+// cliente («Portafolio de soluciones integrales», 2026). La tienda vende la
+// dotación; esta página vende lo otro que hace +Control: montar y administrar
+// el SG-SST. Todos los botones de WhatsApp se arman acá, en el servidor, con
+// el código de la visita y un mensaje que dice de qué servicio o sector viene.
+const categorias = await obtenerCategorias();
+const codigo = Astro.cookies.get(COOKIE_REF)?.value ?? null;
+
+const enlaceGeneral = construirEnlaceWhatsAppServicio(undefined, codigo);
+
+const pilares = ["Cumplimiento legal", "Reducción de riesgos", "Protección del talento humano"];
+
+const soluciones = [
+  { href: "#sg-sst", titulo: "Gestión integral del SG-SST", texto: "Diseñamos, implementamos y administramos el sistema de su empresa." },
+  { href: "#sectores", titulo: "Soluciones por sector", texto: "Servicio y dotación ajustados a los riesgos de su industria." },
+  { href: "#acompanamiento", titulo: "Acompañamiento empresarial", texto: "Seguimiento, visitas y asesoría técnica de manera permanente." },
+  { href: "#suministros", titulo: "Suministros para empresas", texto: "EPP, calzado, bioseguridad y equipos para emergencias." },
+];
+
+// Los cuatro bloques del SG-SST, en el orden del portafolio.
+const sgsst = [
+  { titulo: "El sistema", items: ["Diagnóstico del SG-SST", "Diseño e implementación", "Administración del sistema", "Actualización documental"] },
+  { titulo: "Los riesgos", items: ["Matriz de peligros y riesgos", "Plan anual de trabajo", "Investigación de accidentes", "Inspecciones de seguridad"] },
+  { titulo: "Las emergencias", items: ["Planes de emergencia", "Simulacros", "Auditorías internas", "Indicadores de gestión"] },
+  { titulo: "Las personas", items: ["Capacitación", "COPASST", "Comité de Convivencia", "Mejora continua"] },
+];
+
+const pasos = [
+  { titulo: "Diagnóstico", texto: "Revisamos las necesidades, los riesgos y las condiciones actuales de su empresa para ver qué se puede mejorar." },
+  { titulo: "Diseño de la solución", texto: "Armamos un plan a la medida de su operación, con lo que exige la norma y lo que de verdad necesita." },
+  { titulo: "Implementación", texto: "Ponemos en marcha lo acordado, cuidando el cumplimiento normativo y que cada proceso quede bien hecho." },
+  { titulo: "Acompañamiento", texto: "Le damos asesoría continua, seguimiento técnico y soporte para que las soluciones funcionen." },
+  { titulo: "Mejora continua", texto: "Medimos resultados, actualizamos procesos y proponemos acciones que fortalezcan la seguridad." },
+];
+
+const sectores = [
+  {
+    id: "vigilancia",
+    nombre: "Empresas de vigilancia",
+    sst: ["Administración del SG-SST", "Investigación de accidentes", "Capacitación", "Inspecciones"],
+    dotacion: ["Botiquines", "Calzado ejecutivo y botas tácticas", "Chalecos", "Linternas", "EPP"],
+  },
+  {
+    id: "aseo",
+    nombre: "Aseo y servicios generales",
+    sst: ["Matriz de riesgos", "Capacitación", "Inspecciones"],
+    dotacion: ["Zapatos EVA y botas PVC", "Delantales y guantes especializados", "Gafas, caretas y rodilleras", "Fajas ergonómicas", "Botiquines y kits de bioseguridad"],
+  },
+  {
+    id: "construccion",
+    nombre: "Constructoras",
+    sst: ["Auditorías", "Planes de emergencia", "Investigación de accidentes"],
+    dotacion: ["Botas dieléctricas y cascos", "Arnés, chalecos y guantes", "Gafas y equipos de emergencia", "Botiquines industriales"],
+  },
+  {
+    id: "propiedad-horizontal",
+    nombre: "Propiedad horizontal",
+    sst: ["Planes de emergencia", "Capacitación de brigadas", "Investigación de accidentes"],
+    dotacion: ["Botiquines y camillas", "Chalecos y linternas", "Megáfonos y kits de emergencia", "Dotación para personal operativo"],
+  },
+  {
+    id: "industria",
+    nombre: "Industria y manufactura",
+    sst: ["Auditorías", "Inspecciones", "Investigación de accidentes"],
+    dotacion: ["Elementos de protección personal", "Botiquines industriales", "Equipos para brigadas", "Calzado especializado", "Kits de emergencia"],
+  },
+].map((s) => ({
+  ...s,
+  enlace: construirEnlaceWhatsAppServicio(`Mi empresa es del sector: ${s.nombre.toLowerCase()}.`, codigo),
+}));
+
+const acompanamiento = [
+  "Visitas programadas",
+  "Actualización documental",
+  "Inspecciones periódicas",
+  "Seguimiento al SG-SST",
+  "Reposición de insumos",
+  "Asesoría técnica",
+  "Informes ejecutivos",
+  "Planes de mejora",
+  "Soporte prioritario",
+];
+const enlaceAcompanamiento = construirEnlaceWhatsAppServicio("Me interesa un plan de acompañamiento empresarial.", codigo);
+
+const suministros = [
+  { titulo: "Elementos de protección personal", items: ["Cascos", "Protectores auditivos", "Guantes", "Gafas", "Respiradores", "Chalecos y arnés"] },
+  { titulo: "Calzado especializado", items: ["Seguridad", "Dieléctrico", "PVC", "EVA", "Ejecutivo", "Ocupacional"] },
+  { titulo: "Bioseguridad", items: ["Alcohol", "Jabón industrial", "Dispensadores", "Tapabocas", "Control sanitario"] },
+  { titulo: "Equipos para emergencias", items: ["Botiquines y camillas", "Chalecos de brigadista", "Megáfonos y conos", "Linternas", "Kits de emergencia", "Kits antiderrames"] },
+];
+
+const iconoCheck = "m5 12 5 5L20 7";
+---
+
+<BaseLayout
+  titulo="Servicios de Seguridad y Salud en el Trabajo (SG-SST)"
+  descripcion="Diseño, implementación y administración del SG-SST, planes de acompañamiento, soluciones por sector y suministro de dotación y EPP para empresas en Colombia."
+>
+  <Header categorias={categorias} />
+
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden bg-brand-500 text-white">
+      <img
+        src="/fotos/banda-bodega-1983.webp"
+        srcset="/fotos/banda-bodega-1000.webp 1000w, /fotos/banda-bodega-1983.webp 1983w"
+        sizes="100vw"
+        alt=""
+        aria-hidden="true"
+        fetchpriority="high"
+        decoding="async"
+        class="pointer-events-none absolute inset-0 h-full w-full select-none object-cover object-[78%_center]"
+      />
+      <div class="absolute inset-0 bg-brand-500/85 lg:bg-transparent lg:bg-gradient-to-r lg:from-brand-500 lg:via-brand-500/85 lg:to-brand-500/10" aria-hidden="true"></div>
+
+      <div class="relative mx-auto max-w-7xl px-4 py-16 sm:py-24">
+        <div class="max-w-2xl">
+          <p class="text-sm font-semibold text-plata">Soluciones integrales en Seguridad y Salud en el Trabajo</p>
+          <h1 class="mt-4 text-4xl font-black leading-[0.98] tracking-[-0.035em] sm:text-6xl">
+            Más que un proveedor, un aliado para su empresa.
+          </h1>
+          <p class="mt-5 max-w-xl text-lg text-[#C9CEDA]">
+            Montamos y administramos el SG-SST de su empresa, la acompañamos todo el año y le suministramos la dotación
+            y los equipos que pide la norma. Todo con un mismo equipo.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a
+              href={enlaceGeneral}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-wa-origen="servicios-hero"
+              class="inline-flex items-center justify-center rounded-[6px] bg-white px-7 py-4 font-bold text-brand-500 shadow-lg shadow-black/25 transition hover:bg-tecnico"
+            >
+              Hablar con un consultor
+            </a>
+            <a href="#sg-sst" class="inline-flex items-center justify-center rounded-[6px] border border-white/25 px-6 py-4 font-semibold transition hover:border-white/60 hover:bg-white/5">
+              Ver los servicios
+            </a>
+          </div>
+          <ul class="mt-10 flex flex-wrap gap-2">
+            {pilares.map((p) => (
+              <li class="inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-3 py-1.5 text-sm font-semibold ring-1 ring-white/15">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-plata" aria-hidden="true"><path d={iconoCheck} /></svg>
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div class="franja-plata" aria-hidden="true"></div>
+    </section>
+
+    <!-- Las cuatro soluciones -->
+    <section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+      <h2 class="max-w-3xl text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
+        Todo lo que su empresa necesita en un solo lugar.
+      </h2>
+      <p class="mt-4 max-w-2xl text-lg text-acero">
+        Proteger a sus trabajadores, cumplir la normativa vigente y mantener la operación andando, sin tener que buscar
+        un proveedor para cada cosa.
+      </p>
+      <ul class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+        {soluciones.map((s) => (
+          <li>
+            <a
+              href={s.href}
+              class="group flex h-full flex-col justify-between gap-6 rounded-2xl bg-tecnico p-6 ring-1 ring-inset ring-linea transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_18px_40px_-20px_rgba(24,28,55,0.35)] hover:ring-plata"
+            >
+              <span>
+                <span class="block text-xl font-black leading-tight tracking-[-0.02em] text-brand-500">{s.titulo}</span>
+                <span class="mt-2 block text-[15px] text-acero">{s.texto}</span>
+              </span>
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-500 ring-1 ring-linea transition group-hover:bg-brand-500 group-hover:text-white group-hover:ring-brand-500" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- SG-SST -->
+    <section id="sg-sst" class="scroll-mt-[calc(var(--alto-header,120px)+1rem)] border-y border-linea bg-tecnico">
+      <div class="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:py-20 lg:grid-cols-[5fr_7fr] lg:gap-14">
+        <div>
+          <p class="text-sm font-semibold text-acero">El eje de +Control</p>
+          <h2 class="mt-3 text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
+            Gestión integral del SG-SST.
+          </h2>
+          <p class="mt-5 text-lg text-acero">
+            Diseñamos, implementamos y administramos el Sistema de Gestión de Seguridad y Salud en el Trabajo de su
+            empresa. Así cumple con la norma y su gente trabaja con una cultura de prevención.
+          </p>
+          <a
+            href={construirEnlaceWhatsAppServicio("Quiero cotizar la gestión del SG-SST de mi empresa.", codigo)}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wa-origen="servicios-sgsst"
+            class="mt-8 inline-flex items-center justify-center rounded-[6px] bg-brand-500 px-6 py-3.5 font-bold text-white transition hover:bg-brand-400"
+          >
+            Cotizar el SG-SST de mi empresa
+          </a>
+        </div>
+
+        <ul class="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          {sgsst.map((bloque, i) => (
+            <li class:list={[
+              "rounded-2xl p-6",
+              i === 0 || i === 3 ? "bg-brand-500 text-white" : "bg-white text-brand-500 ring-1 ring-inset ring-linea",
+            ]}>
+              <p class:list={["text-[11px] font-bold uppercase tracking-[0.12em]", i === 0 || i === 3 ? "text-plata" : "text-acero"]}>{bloque.titulo}</p>
+              <ul class="mt-4 space-y-2.5">
+                {bloque.items.map((item) => (
+                  <li class="flex items-start gap-2.5 font-semibold">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class:list={["mt-1 shrink-0", i === 0 || i === 3 ? "text-plata" : "text-senal"]} aria-hidden="true"><path d={iconoCheck} /></svg>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Cómo trabajamos -->
+    <section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+      <h2 class="max-w-3xl text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
+        No vendemos servicios sueltos: diseñamos la solución.
+      </h2>
+      <ol class="mt-12 grid gap-x-8 sm:grid-cols-2 lg:grid-cols-5">
+        {pasos.map((paso, i) => (
+          <li class="relative border-t-[3px] border-brand-500 py-6">
+            <span class="block text-3xl font-black tabular-nums tracking-[-0.03em] text-brand-500">{String(i + 1).padStart(2, "0")}</span>
+            <p class="mt-3 font-extrabold text-brand-500">{paso.titulo}</p>
+            <p class="mt-1 text-[15px] text-acero">{paso.texto}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <!-- Por sector -->
+    <section id="sectores" class="scroll-mt-[calc(var(--alto-header,120px)+1rem)] bg-brand-500 bg-[url(/textura-hero.webp)] bg-cover text-white">
+      <div class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+        <p class="text-sm font-semibold text-plata">Soluciones por sector</p>
+        <h2 class="mt-3 max-w-3xl text-3xl font-black leading-none tracking-[-0.035em] sm:text-5xl">
+          Conocemos su industria, entendemos su operación.
+        </h2>
+        <ul class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {sectores.map((s) => (
+            <li class="flex flex-col rounded-2xl bg-white p-6 text-brand-500 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)]">
+              <h3 class="text-2xl font-black leading-tight tracking-[-0.02em]">{s.nombre}</h3>
+              <div class="mt-5 grid flex-1 gap-5 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-acero">Gestión SG-SST</p>
+                  <ul class="mt-2 space-y-1.5 text-[15px] font-semibold">
+                    {s.sst.map((item) => (
+                      <li class="flex items-start gap-2">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="mt-1 shrink-0 text-senal" aria-hidden="true"><path d={iconoCheck} /></svg>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p class="text-[11px] font-bold uppercase tracking-[0.12em] text-acero">Dotación</p>
+                  <ul class="mt-2 space-y-1.5 text-[15px] text-acero">
+                    {s.dotacion.map((item) => <li>{item}</li>)}
+                  </ul>
+                </div>
+              </div>
+              <a
+                href={s.enlace}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-wa-origen={`servicios-sector-${s.id}`}
+                class="mt-6 inline-flex items-center justify-between rounded-[6px] bg-tecnico px-4 py-3 text-sm font-bold transition hover:bg-brand-500 hover:text-white"
+              >
+                Cotizar para mi empresa <span aria-hidden="true">→</span>
+              </a>
+            </li>
+          ))}
+          <li class="flex flex-col justify-between rounded-2xl p-6 ring-1 ring-inset ring-white/20">
+            <div>
+              <p class="text-2xl font-black leading-tight tracking-[-0.02em]">¿Su sector no está en la lista?</p>
+              <p class="mt-3 text-[#C9CEDA]">Cuéntenos a qué se dedica su empresa y le armamos una propuesta a la medida.</p>
+            </div>
+            <a
+              href={enlaceGeneral}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-wa-origen="servicios-sector-otro"
+              class="mt-6 inline-flex items-center justify-center rounded-[6px] bg-white px-5 py-3.5 font-bold text-brand-500 transition hover:bg-tecnico"
+            >
+              Hablar con un consultor
+            </a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Acompañamiento -->
+    <section id="acompanamiento" class="scroll-mt-[calc(var(--alto-header,120px)+1rem)] mx-auto max-w-7xl px-4 py-16 sm:py-20">
+      <div class="grid gap-10 lg:grid-cols-[5fr_7fr] lg:gap-14">
+        <div>
+          <p class="text-sm font-semibold text-acero">Planes de acompañamiento empresarial</p>
+          <h2 class="mt-3 text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
+            Nuestro trabajo no termina con la implementación.
+          </h2>
+          <p class="mt-5 text-lg text-acero">
+            Lo acompañamos para que el sistema funcione, la documentación esté al día y nunca le falten los insumos para
+            operar de manera segura. Su empresa siempre tendrá un equipo experto respaldando su gestión en Seguridad y
+            Salud en el Trabajo.
+          </p>
+          <a
+            href={enlaceAcompanamiento}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wa-origen="servicios-acompanamiento"
+            class="mt-8 inline-flex items-center justify-center rounded-[6px] bg-brand-500 px-6 py-3.5 font-bold text-white transition hover:bg-brand-400"
+          >
+            Quiero un plan de acompañamiento
+          </a>
+        </div>
+        <ul class="grid content-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {acompanamiento.map((item) => (
+            <li class="flex items-center gap-3 rounded-xl bg-tecnico px-4 py-4 font-semibold text-brand-500 ring-1 ring-inset ring-linea">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d={iconoCheck} /></svg>
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Suministros -->
+    <section id="suministros" class="scroll-mt-[calc(var(--alto-header,120px)+1rem)] border-t border-linea bg-tecnico">
+      <div class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+        <div class="flex flex-wrap items-end justify-between gap-6">
+          <div class="max-w-2xl">
+            <p class="text-sm font-semibold text-acero">Suministros especializados para empresas</p>
+            <h2 class="mt-3 text-3xl font-black leading-none tracking-[-0.035em] text-brand-500 sm:text-5xl">
+              Lo que su gente necesita para trabajar segura.
+            </h2>
+            <p class="mt-4 text-lg text-acero">
+              Productos de buena calidad, con disponibilidad para empresas de todos los sectores. Lo que no esté en el
+              catálogo, se lo conseguimos.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a href="/categorias" class="inline-flex items-center justify-center rounded-[6px] bg-brand-500 px-6 py-3.5 font-bold text-white transition hover:bg-brand-400">
+              Ver el catálogo
+            </a>
+            <a href="/cotizar" class="inline-flex items-center justify-center rounded-[6px] border border-brand-500/25 px-6 py-3.5 font-semibold text-brand-500 transition hover:border-brand-500">
+              Cotizar por volumen
+            </a>
+          </div>
+        </div>
+        <ul class="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+          {suministros.map((g) => (
+            <li class="rounded-2xl bg-white p-6 ring-1 ring-inset ring-linea">
+              <p class="text-lg font-black leading-tight tracking-[-0.02em] text-brand-500">{g.titulo}</p>
+              <ul class="mt-4 flex flex-wrap gap-1.5">
+                {g.items.map((item) => (
+                  <li class="rounded-full bg-tecnico px-2.5 py-1 text-[13px] font-semibold text-acero">{item}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Cierre -->
+    <section class="mx-auto max-w-7xl px-4 py-16 sm:py-20">
+      <div class="relative overflow-hidden rounded-2xl bg-brand-500 bg-[url(/textura-hero.webp)] bg-cover px-6 py-12 text-white sm:px-10 sm:py-16 lg:px-14">
+        <div class="grid gap-10 lg:grid-cols-[3fr_2fr] lg:items-center">
+          <div>
+            <p class="text-sm font-semibold text-plata">Protegemos personas. Fortalecemos organizaciones.</p>
+            <h2 class="mt-4 text-3xl font-black leading-[0.98] tracking-[-0.035em] sm:text-5xl">
+              Diseñamos soluciones para que su empresa opere con seguridad.
+            </h2>
+            <a
+              href={enlaceGeneral}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-wa-origen="servicios-cierre"
+              class="mt-8 inline-flex items-center justify-center rounded-[6px] bg-white px-7 py-4 font-bold text-brand-500 shadow-lg shadow-black/25 transition hover:bg-tecnico"
+            >
+              Hablar con un consultor
+            </a>
+          </div>
+          <dl class="space-y-4 rounded-xl bg-white/[0.06] p-6 ring-1 ring-white/10">
+            <div>
+              <dt class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Teléfono y WhatsApp</dt>
+              <dd class="mt-1 font-bold tabular-nums"><a href={`tel:${SITE.telefonoTel}`} class="hover:underline">{SITE.telefono}</a></dd>
+            </div>
+            <div>
+              <dt class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Correo</dt>
+              <dd class="mt-1 break-all font-bold"><a href={`mailto:${SITE.email}`} class="hover:underline">{SITE.email}</a></dd>
+            </div>
+            <div>
+              <dt class="text-[11px] font-bold uppercase tracking-[0.12em] text-plata">Oficina</dt>
+              <dd class="mt-1 font-bold">{SITE.direccion}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer categorias={categorias} />
+</BaseLayout>
